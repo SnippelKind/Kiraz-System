@@ -274,53 +274,52 @@
     <div class="grid-container">
         <div class="route-card" onclick="openRoute('mapTab')">
             <div class="fallback-icon">🗺️</div>
-            <img src="/public/DROGEN%20ROUTE.png" alt="Waffen" alt="Map" onerror="this.style.opacity='0'">
+            <img src="/public/DROGEN%20ROUTE.png" alt="Map" onerror="this.style.opacity='0'">
             <div class="route-title" style="color: #ffb7c5;">📍 Routen Karte</div>
         </div>
-       <div class="route-card" onclick="openRoute('craftTab')">
+        <div class="route-card" onclick="openRoute('craftTab')">
             <div class="fallback-icon">🔫</div>
-            <!-- NEU: Euer eigenes Waffen-Routen Bild -->
             <img src="/public/WAFFEN%20ROUTE.png" alt="Waffen" onerror="this.style.opacity='0'">
             <div class="route-title">Waffen</div>
         </div>
-        <div class="route-card" onclick="alert('Ephi Route folgt...')">
+        <div class="route-card" onclick="openRoute('ephiTab')">
             <div class="fallback-icon">⚗️</div>
-            <img src="/public/EPHI%20ROUTE.png" alt="Waffen" onerror="this.style.opacity='0'">
+            <img src="/public/EPHI%20ROUTE.png" alt="Ephi" onerror="this.style.opacity='0'">
             <div class="route-title">Ephi</div>
         </div>
         <div class="route-card" onclick="alert('Kokain Route folgt...')">
             <div class="fallback-icon">🌿</div>
-            <img src="/public/KOKAIN%20ROUTE.png" alt="Waffen" onerror="this.style.opacity='0'">
+            <img src="/public/KOKAIN%20ROUTE.png" alt="Kokain" onerror="this.style.opacity='0'">
             <div class="route-title">Kokain</div>
         </div>
         <div class="route-card" onclick="alert('Meth Route folgt...')">
             <div class="fallback-icon">🧊</div>
-            <img src="/public/METH%20ROUTE.png" alt="Waffen" onerror="this.style.opacity='0'">
+            <img src="/public/METH%20ROUTE.png" alt="Meth" onerror="this.style.opacity='0'">
             <div class="route-title">Meth</div>
         </div>
         <div class="route-card" onclick="alert('Munition Route folgt...')">
             <div class="fallback-icon">🎒</div>
-            <img src="/public/MUNITION%20ROUTE.png" alt="Waffen" onerror="this.style.opacity='0'">
+            <img src="/public/MUNITION%20ROUTE.png" alt="Munition" onerror="this.style.opacity='0'">
             <div class="route-title">Munition</div>
         </div>
         <div class="route-card" onclick="alert('Westen Route folgt...')">
             <div class="fallback-icon">🛡️</div>
-            <img src="/public/WESTEN%20ROUTE.png" alt="Waffen" onerror="this.style.opacity='0'">
+            <img src="/public/WESTEN%20ROUTE.png" alt="Westen" onerror="this.style.opacity='0'">
             <div class="route-title">Westen</div>
         </div>
         <div class="route-card" onclick="alert('Ecstasy Route folgt...')">
             <div class="fallback-icon">💊</div>
-            <img src="/public/ECSTASY%20ROUTE.png" alt="Waffen" onerror="this.style.opacity='0'">
+            <img src="/public/ECSTASY%20ROUTE.png" alt="Ecstasy" onerror="this.style.opacity='0'">
             <div class="route-title">Ecstasy</div>
         </div>
         <div class="route-card" onclick="alert('Geldwäsche folgt...')">
             <div class="fallback-icon">💵</div>
-            <img src="/public/GELDWASCHE.png" alt="Waffen" onerror="this.style.opacity='0'">
+            <img src="/public/GELDWASCHE.png" alt="Geldwäsche" onerror="this.style.opacity='0'">
             <div class="route-title">Geldwäsche</div>
         </div>
         <div class="route-card" onclick="alert('Schwarzmarkt folgt...')">
             <div class="fallback-icon">🛒</div>
-            <img src="/public/SCHWARZMARKT.png" alt="Waffen" onerror="this.style.opacity='0'">
+            <img src="/public/SCHWARZMARKT.png" alt="Schwarzmarkt" onerror="this.style.opacity='0'">
             <div class="route-title">Schwarzmarkt</div>
         </div>
     </div>
@@ -329,12 +328,10 @@
         <button onclick="openRoute('timerTab')">⏱ Alle Timer</button>
         <button onclick="openRoute('smeltTab')">🔥 Schmelzofen</button>
         <button onclick="openRoute('logTab')">📜 Protokoll</button>
-        <!-- NEU: Online Button -->
         <button id="onlineCountBtn" onclick="openRoute('onlineTab')">👥 Online (0)</button>
     </div>
 </div>
 
-<!-- NEU: Online Tab -->
 <div id="onlineTab" style="display:none;">
     <div class="box">
         <h2 style="color:#77dd77">🟢 Aktuell auf dem Dashboard</h2>
@@ -412,6 +409,23 @@
     </div>
 </div>
 
+<!-- NEU: Ephi Labor Tab -->
+<div id="ephiTab" style="display:none;">
+    <div class="box">
+        <h2 style="color:#ffb7c5">⚗️ Ephi Labor</h2>
+        <select id="ephiSelect" onchange="loadEphiRecipe()">
+            <option value="">-- Prozess wählen --</option>
+            <option value="Froschhaut">1. Frosch ➔ Froschhaut</option>
+            <option value="Ephi Extrakt">2. Froschhaut ➔ Ephi Extrakt</option>
+            <option value="Ephi">3. Ephi Extrakt ➔ Ephi</option>
+        </select>
+        <input type="number" id="ephiAmount" placeholder="Anzahl der Durchläufe..." min="1" oninput="checkEphiCraft();">
+        <div id="ephiInputs"></div>
+        <p id="ephiResult" class="result">Bitte Prozess wählen</p>
+        <button id="ephiStartBtn" class="btn-action" onclick="createEphiCraft()" style="display:none;">▶ Produktion starten</button>
+    </div>
+</div>
+
 <div id="timerTab" style="display:none;">
     <div class="box">
         <h2 style="color:#77dd77">⏱ Aktive Produktion</h2>
@@ -454,7 +468,7 @@ const db = firebase.firestore();
 let currentUser = "Unbekannt"; 
 let isUserAdmin = false; 
 
-// --- NEU: ONLINE HEARTBEAT ---
+// --- ONLINE HEARTBEAT ---
 function updateOnlineStatus() {
     if(currentUser !== "Unbekannt") {
         db.collection("online").doc(currentUser).set({
@@ -463,10 +477,8 @@ function updateOnlineStatus() {
         }).catch(err => console.log("Fehler beim Online-Status: ", err));
     }
 }
-// Sendet alle 10 Sekunden ein Lebenszeichen an Firebase
 setInterval(updateOnlineStatus, 10000);
 
-// Lauscht auf alle User, die "Online" sind
 db.collection("online").onSnapshot((snapshot) => {
     const list = document.getElementById("onlineList");
     const countBtn = document.getElementById("onlineCountBtn");
@@ -478,7 +490,6 @@ db.collection("online").onSnapshot((snapshot) => {
 
     snapshot.forEach(doc => {
         let data = doc.data();
-        // Wenn das letzte Lebenszeichen weniger als 30 Sekunden her ist:
         if (now - data.lastActive < 30000) {
             onlineHtml += `<div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1.1em;">
                             🟢 <span style="color: #fff; font-weight: bold; margin-left: 10px;">${data.username}</span>
@@ -549,14 +560,22 @@ const rezepte = {
     "Abgesägte Schrottflinte": { mats: { "Waffenrahmen": 150, "Schlagbolzen": 120, "Riegel": 150, "Bargeld": 100000 }, time: 4200 }
 };
 
+// NEU: Ephi Rezepte
+const ephiRezepte = {
+    "Froschhaut": { mats: { "Frosch": 1 }, time: 15 },
+    "Ephi Extrakt": { mats: { "Froschhaut": 1 }, time: 20 },
+    "Ephi": { mats: { "Ephi Extrakt": 1 }, time: 12 }
+};
+
 function showDashboard() {
     document.getElementById('mainDashboard').style.display = "block";
     document.getElementById('craftTab').style.display = "none";
+    document.getElementById('ephiTab').style.display = "none"; // Versteckt Ephi Tab
     document.getElementById('timerTab').style.display = "none";
     document.getElementById('smeltTab').style.display = "none";
     document.getElementById('mapTab').style.display = "none";
     document.getElementById('logTab').style.display = "none";
-    document.getElementById('onlineTab').style.display = "none"; // Versteckt den Online Tab
+    document.getElementById('onlineTab').style.display = "none"; 
     document.getElementById('backBtn').style.display = "none";
 }
 
@@ -616,7 +635,64 @@ function createCraft() {
         paused: false,
         remainingTime: 0 
     }).then(() => {
-        addLog("Herstellung gestartet", craftName); 
+        addLog("Waffen-Produktion gestartet", craftName); 
+    });
+
+    openRoute('timerTab');
+}
+
+// --- NEU: EPHI LOGIK ---
+function loadEphiRecipe() {
+    const inputs = document.getElementById("ephiInputs"); inputs.innerHTML = "";
+    let item = document.getElementById("ephiSelect").value;
+    let data = ephiRezepte[item];
+    if (!data) return;
+    for (let t in data.mats) {
+        let icon = (t === "Frosch") ? "🐸" : "🧪";
+        inputs.innerHTML += `<div class="material">${icon} ${t}: <input id="ephi_${t}" type="number" placeholder="Vorhanden..." oninput="checkEphiCraft()"></div>`;
+    }
+    checkEphiCraft();
+}
+
+function checkEphiCraft() {
+    let item = document.getElementById("ephiSelect").value;
+    let amount = parseInt(document.getElementById("ephiAmount").value) || 1;
+    let data = ephiRezepte[item];
+    let result = document.getElementById("ephiResult");
+    let startBtn = document.getElementById("ephiStartBtn");
+
+    if (!data) { result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+
+    let fehlend = [];
+    for (let t in data.mats) {
+        let need = data.mats[t] * amount; 
+        let have = parseInt(document.getElementById("ephi_" + t)?.value) || 0;
+        if (have < need) fehlend.push(`${t} (${need - have})`);
+    }
+
+    if (fehlend.length === 0) {
+        result.innerText = "✅ Materialien bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block";
+    } else {
+        result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none";
+    }
+}
+
+function createEphiCraft() {
+    let item = document.getElementById("ephiSelect").value;
+    let amount = parseInt(document.getElementById("ephiAmount").value) || 1;
+    let data = ephiRezepte[item];
+    let durationMs = data.time * amount * 1000;
+    let craftName = (amount > 1 ? amount + "x " : "") + item;
+
+    db.collection("crafts").add({
+        name: craftName,
+        startedBy: currentUser,
+        endTime: Date.now() + durationMs,
+        totalDuration: durationMs,
+        paused: false,
+        remainingTime: 0 
+    }).then(() => {
+        addLog("Ephi-Produktion gestartet", craftName); 
     });
 
     openRoute('timerTab');
