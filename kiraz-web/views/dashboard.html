@@ -203,14 +203,21 @@
         pointer-events: none;
     }
 
-    .marker {
-        position: absolute; width: 22px; height: 22px;
-        background: #ffb7c5; border: 2px solid #fff; border-radius: 50%;
-        transform: translate(-50%, -50%);
-        box-shadow: 0 0 10px rgba(0,0,0,0.8);
-        cursor: pointer; z-index: 10; transition: transform 0.2s;
-        pointer-events: auto;
-    }
+.marker {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    background: #ffb7c5;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    /* WICHTIG: Das hier sorgt dafür, dass die MITTE des Punktes auf den Koordinaten liegt */
+    transform: translate(-50%, -50%); 
+    box-shadow: 0 0 10px rgba(0,0,0,0.8);
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.2s;
+    pointer-events: auto;
+}
     .marker:hover { transform: translate(-50%, -50%) scale(1.3); background: #ff6b6b; }
 
     .marker-label {
@@ -639,28 +646,32 @@ function renderMapMarkers() {
 }
 
 function addMapMarker(e) {
+    // Wir ignorieren den Klick, wenn man direkt auf ein Label oder einen vorhandenen Marker klickt
     if(e.target.classList.contains('marker') || e.target.classList.contains('marker-label')) return;
 
     const mapImg = document.getElementById("gtaMapImage");
-    let x, y;
+    const rect = mapImg.getBoundingClientRect();
 
-    if (e.target.id === 'gtaMapImage') {
-        x = (e.offsetX / mapImg.clientWidth) * 100;
-        y = (e.offsetY / mapImg.clientHeight) * 100;
-    } else {
-        const rect = mapImg.getBoundingClientRect();
-        x = ((e.clientX - rect.left) / rect.width) * 100;
-        y = ((e.clientY - rect.top) / rect.height) * 100;
-    }
+    // EXAKTE BERECHNUNG:
+    // e.clientX/Y ist die Position der Maus auf dem Bildschirm.
+    // rect.left/top ist die Position des Bildes auf dem Bildschirm.
+    // Wir ziehen das voneinander ab und teilen es durch die aktuelle Breite/Höhe des Bildes.
+    // So erhalten wir immer einen Wert zwischen 0 und 100 (Prozent), egal ob gescrollt wurde!
+    let x = ((e.clientX - rect.left) / rect.width) * 100;
+    let y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    // Sicherheits-Check: Falls man knapp neben das Bild klickt
+    if (x < 0 || x > 100 || y < 0 || y > 100) return;
 
     let routeName = prompt("Welche Route / Welcher Punkt befindet sich hier? (z.B. Waffen, Meth)");
     
     if (routeName && routeName.trim() !== "") {
+        // Speichern in Firebase
         db.collection("markers").add({
             x: x,
             y: y,
             name: routeName
-        }).catch((error) => console.error("Fehler beim Speichern:", error));
+        }).catch((error) => console.error("Fehler beim Speichern in Firebase:", error));
     }
 }
 
