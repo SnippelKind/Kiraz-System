@@ -143,17 +143,12 @@
     .material { text-align: left; margin: 12px 0; font-size: 0.95em; color: #ccc; }
     
     .progressBar {
-        width: 100%; height: 20px; background: rgba(255,255,255,0.05);
+        width: 100%; height: 12px; background: rgba(255,255,255,0.05);
         border-radius: 10px; overflow: hidden; margin: 15px 0;
         border: 1px solid rgba(255,255,255,0.1);
     }
 
     .progress { height: 100%; background: linear-gradient(90deg, #77dd77, #4cae4c); width: 0%; transition: width 0.5s ease; }
-
-    .craftItem {
-        margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.05);
-        border-radius: 15px; border-left: 6px solid #ffb7c5; text-align: left;
-    }
 
     .result { margin-top: 15px; font-weight: bold; font-size: 1.1em; }
 
@@ -256,6 +251,69 @@
     .log-user { color: #ffb7c5; font-weight: bold; margin-right: 5px; }
     .log-action { color: #5bc0de; font-weight: bold; margin-right: 5px; }
 
+    /* ========================================= */
+    /* NEUES PREMIUM TIMER DESIGN                */
+    /* ========================================= */
+    .craftItem {
+        margin-top: 15px;
+        padding: 20px;
+        background: linear-gradient(145deg, #1e1e2f, #2a2a40);
+        border-radius: 15px;
+        border-left: 6px solid #77dd77; /* Standard: Grün für Laufend */
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        transition: transform 0.2s, border-color 0.3s;
+    }
+    .craftItem.paused {
+        border-left-color: #ffcc00; /* Gelb für Pausiert */
+        opacity: 0.9;
+    }
+    .craft-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .craft-title {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #fff;
+    }
+    .craft-user {
+        font-size: 0.85em;
+        color: #aaa;
+        margin-top: 4px;
+    }
+    .craft-time {
+        font-size: 1.3em;
+        font-weight: bold;
+        color: #ffb7c5;
+        font-family: monospace;
+        background: rgba(0,0,0,0.3);
+        padding: 5px 10px;
+        border-radius: 8px;
+    }
+    .craft-controls {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    .btn-icon {
+        padding: 8px 15px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.2s;
+        font-size: 0.9em;
+    }
+    .btn-pause { background: #ffcc00; color: #000; }
+    .btn-resume { background: #77dd77; color: #000; }
+    .btn-cancel { background: #ff6b6b; color: #fff; }
+    .btn-icon:hover { transform: scale(1.05); }
+
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
@@ -312,7 +370,6 @@
             <img src="/public/ECSTASY%20ROUTE.png" alt="Ecstasy" onerror="this.style.opacity='0'">
             <div class="route-title">Ecstasy</div>
         </div>
-        <!-- NEU: Geldwäsche Route angebunden -->
         <div class="route-card" onclick="openRoute('geldwaescheTab')">
             <div class="fallback-icon">💵</div>
             <img src="/public/GELDWASCHE.png" alt="Geldwäsche" onerror="this.style.opacity='0'">
@@ -505,7 +562,7 @@
     </div>
 </div>
 
-<!-- NEU: Geldwäsche Tab -->
+<!-- Geldwäsche Tab -->
 <div id="geldwaescheTab" style="display:none;">
     <div class="box">
         <h2 style="color:#ffb7c5">💵 Geldwäsche</h2>
@@ -526,10 +583,12 @@
     </div>
 </div>
 
+<!-- NEUES TIMER TAB DESIGN -->
 <div id="timerTab" style="display:none;">
-    <div class="box">
-        <h2 style="color:#77dd77">⏱ Aktive Produktion</h2>
-        <div id="craftList"></div>
+    <div class="box box-large">
+        <h2 style="color:#77dd77">⏱ Aktive Produktionen</h2>
+        <p style="color:#ccc; font-size: 0.9em;">Alle laufenden Prozesse der Fraktion in der Übersicht.</p>
+        <div id="craftList" style="max-height: 700px; overflow-y: auto; padding-right: 10px;"></div>
     </div>
 </div>
 
@@ -698,7 +757,7 @@ function showDashboard() {
     document.getElementById('ecstasyTab').style.display = "none";
     document.getElementById('westenTab').style.display = "none";
     document.getElementById('munitionTab').style.display = "none";
-    document.getElementById('geldwaescheTab').style.display = "none"; // Versteckt Geldwäsche Tab
+    document.getElementById('geldwaescheTab').style.display = "none"; 
     document.getElementById('timerTab').style.display = "none";
     document.getElementById('smeltTab').style.display = "none";
     document.getElementById('mapTab').style.display = "none";
@@ -945,7 +1004,7 @@ function createMunitionCraft() {
     openRoute('timerTab');
 }
 
-// --- NEU: GELDWÄSCHE LOGIK ---
+// --- GELDWÄSCHE LOGIK ---
 function checkGeldwaesche() {
     let amount = parseInt(document.getElementById("schwarzgeldAmount").value) || 0;
     let hours = parseInt(document.getElementById("geldwaescheHours").value) || 1;
@@ -974,7 +1033,7 @@ function createGeldwaesche() {
     let lossMap = { 1: 60, 2: 50, 3: 40, 4: 30, 5: 20, 6: 10 };
     let cleanMoney = Math.floor(amount * ((100 - lossMap[hours]) / 100));
     
-    let durationMs = hours * 3600 * 1000; // Stunden in Millisekunden
+    let durationMs = hours * 3600 * 1000; 
     let craftName = `Geldwäsche ($${amount.toLocaleString('de-DE')} ➔ $${cleanMoney.toLocaleString('de-DE')})`;
 
     db.collection("crafts").add({
@@ -991,7 +1050,7 @@ function createGeldwaesche() {
     openRoute('timerTab');
 }
 
-// --- ALLGEMEINE TIMER LOGIK ---
+// --- ALLGEMEINE TIMER LOGIK & NEUES RENDER DESIGN ---
 function togglePause(id) {
     let c = crafts.find(x => x.id === id); if(!c) return;
     
@@ -999,13 +1058,13 @@ function togglePause(id) {
         db.collection("crafts").doc(id).update({
             paused: false,
             endTime: Date.now() + c.remainingTime
-        }).then(() => addLog("Herstellung fortgesetzt", c.name)); 
+        }).then(() => addLog("Produktion fortgesetzt", c.name)); 
     } else {
         let leftMs = c.endTime - Date.now();
         db.collection("crafts").doc(id).update({
             paused: true,
             remainingTime: leftMs
-        }).then(() => addLog("Herstellung pausiert", c.name)); 
+        }).then(() => addLog("Produktion pausiert", c.name)); 
     }
 }
 
@@ -1013,7 +1072,7 @@ function cancelCraft(id) {
     let c = crafts.find(x => x.id === id);
     if(confirm("Möchtest du diesen Vorgang wirklich abbrechen?")) {
         db.collection("crafts").doc(id).delete().then(() => {
-            if(c) addLog("Herstellung abgebrochen", c.name); 
+            if(c) addLog("Produktion abgebrochen", c.name); 
         });
     }
 }
@@ -1036,21 +1095,48 @@ function tick() {
 function render() {
     let list = document.getElementById("craftList"); if (!list) return;
     list.innerHTML = ""; let now = Date.now();
-    if(crafts.length === 0) { list.innerHTML = "<p style='color:#aaa;'>Keine aktiven Prozesse.</p>"; return; }
     
-    crafts.forEach(c => {
+    if(crafts.length === 0) { 
+        list.innerHTML = "<p style='color:#aaa; text-align:center; padding: 20px;'>Aktuell laufen keine Produktionen.</p>"; 
+        return; 
+    }
+    
+    // Sortiert die Liste: Was als erstes fertig wird, steht ganz oben!
+    let sortedCrafts = [...crafts].sort((a, b) => {
+        let aTime = a.paused ? (now + a.remainingTime) : a.endTime;
+        let bTime = b.paused ? (now + b.remainingTime) : b.endTime;
+        return aTime - bTime;
+    });
+
+    sortedCrafts.forEach(c => {
         let remainingMs = c.paused ? c.remainingTime : (c.endTime - now);
         let remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
         let percent = Math.min(100, Math.max(0, 100 - (remainingMs / c.totalDuration * 100)));
         
-        let startedByText = c.startedBy ? `<span style="color:#aaa; font-size:0.85em; margin-left:8px; font-weight:normal;">(Gestartet von: ${c.startedBy})</span>` : "";
+        let startedByText = c.startedBy ? `<div class="craft-user">👤 Gestartet von: ${c.startedBy}</div>` : "";
+        let statusClass = c.paused ? "paused" : "";
+        let barColor = c.paused ? "background: #ffcc00;" : "";
+        
+        let pauseBtn = c.paused 
+            ? `<button class="btn-icon btn-resume" onclick="togglePause('${c.id}')" title="Fortsetzen">▶ Fortsetzen</button>` 
+            : `<button class="btn-icon btn-pause" onclick="togglePause('${c.id}')" title="Pausieren">⏸ Pausieren</button>`;
 
         list.innerHTML += `
-        <div class="craftItem">
-            <b>${c.name}</b> ${startedByText}<br>⏳ <span style="color:#ffb7c5">${format(remainingSec)}</span>
-            <div class="progressBar"><div class="progress" style="width:${percent}%"></div></div>
-            <button onclick="togglePause('${c.id}')" style="padding:5px 15px; border-radius:5px; border:none; background:#77dd77; cursor:pointer;">${c.paused ? "▶" : "⏸"}</button>
-            <button onclick="cancelCraft('${c.id}')" style="background:#ffb7c5; border-radius:5px; border:none; cursor:pointer; padding: 5px 15px; margin-left:10px;">❌</button>
+        <div class="craftItem ${statusClass}">
+            <div class="craft-header">
+                <div>
+                    <div class="craft-title">${c.name}</div>
+                    ${startedByText}
+                </div>
+                <div class="craft-time">⏳ ${format(remainingSec)}</div>
+            </div>
+            <div class="progressBar">
+                <div class="progress" style="width:${percent}%; ${barColor}"></div>
+            </div>
+            <div class="craft-controls">
+                ${pauseBtn}
+                <button class="btn-icon btn-cancel" onclick="cancelCraft('${c.id}')" title="Abbrechen">✖ Abbrechen</button>
+            </div>
         </div>`;
     });
 }
