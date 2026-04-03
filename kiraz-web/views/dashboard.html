@@ -1079,9 +1079,10 @@ function checkGeldwaesche() {
     let keepPercent = 100 - lossPercent;
     let cleanMoney = Math.floor(amount * (keepPercent / 100));
 
-    result.innerHTML = `Erwartetes Grüngeld: <span style="color:#77dd77; font-size:1.2em;">$${cleanMoney.toLocaleString('de-DE')}</span> (Dauer: ${hours} Std)`;
+    result.innerHTML = `Erwartetes Grüngeld: <span style="color:#77dd77; font-size:1.2em;">${cleanMoney.toLocaleString('de-DE')} €</span> (Dauer: ${hours} Std)`;
     startBtn.style.display = "block";
 }
+
 function createGeldwaesche() {
     let amount = parseInt(document.getElementById("schwarzgeldAmount").value) || 0;
     let hours = parseInt(document.getElementById("geldwaescheHours").value) || 1;
@@ -1090,7 +1091,7 @@ function createGeldwaesche() {
     let cleanMoney = Math.floor(amount * ((100 - lossMap[hours]) / 100));
     
     let durationMs = hours * 3600 * 1000; 
-    let craftName = `Geldwäsche ($${amount.toLocaleString('de-DE')} ➔ $${cleanMoney.toLocaleString('de-DE')})`;
+    let craftName = `Geldwäsche (${amount.toLocaleString('de-DE')} € ➔ ${cleanMoney.toLocaleString('de-DE')} €)`;
 
     db.collection("crafts").add({
         name: craftName,
@@ -1100,7 +1101,7 @@ function createGeldwaesche() {
         paused: false,
         remainingTime: 0 
     }).then(() => {
-        addLog("Geldwäsche gestartet", `Wäscht $${amount.toLocaleString('de-DE')} für ${hours} Stunde(n)`); 
+        addLog("Geldwäsche gestartet", `Wäscht ${amount.toLocaleString('de-DE')} € für ${hours} Stunde(n)`); 
     });
 
     openRoute('timerTab');
