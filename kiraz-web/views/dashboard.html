@@ -277,9 +277,7 @@
     .btn-cancel { background: #ff6b6b; color: #fff; }
     .btn-icon:hover { transform: scale(1.05); }
 
-    /* ========================================= */
-    /* NEUES SCHWARZMARKT (SHOP) DESIGN          */
-    /* ========================================= */
+    /* SCHWARZMARKT (SHOP) DESIGN */
     .shop-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -287,7 +285,7 @@
         margin-top: 20px;
     }
     .shop-card {
-        background: #2a2a2a; /* Dunkelgrau wie im Bild */
+        background: #2a2a2a; 
         border: 1px solid #444;
         position: relative;
         padding: 15px;
@@ -297,7 +295,6 @@
         justify-content: space-between;
         box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     }
-    /* Hintergrundmuster leicht andeuten */
     .shop-card::before {
         content: "";
         position: absolute;
@@ -323,7 +320,7 @@
         gap: 5px;
     }
     .shop-price {
-        background: #66bb6a; /* Grün */
+        background: #66bb6a; 
         color: #fff;
         padding: 4px 8px;
         font-weight: bold;
@@ -433,8 +430,7 @@
             <img src="/public/GELDWASCHE.png" alt="Geldwäsche" onerror="this.style.opacity='0'">
             <div class="route-title">Geldwäsche</div>
         </div>
-        
-<div class="route-card" onclick="openRoute('schwarzmarktTab')">
+        <div class="route-card" onclick="openRoute('schwarzmarktTab')">
             <div class="fallback-icon">🛒</div>
             <img src="/public/SCHWARZMARKT.png" alt="Schwarzmarkt" onerror="this.style.opacity='0'">
             <div class="route-title">Schwarzmarkt</div>
@@ -444,7 +440,8 @@
     <div class="tabs">
         <button onclick="openRoute('timerTab')">⏱ Alle Timer</button>
         <button onclick="openRoute('smeltTab')">🔥 Schmelzofen</button>
-        <button onclick="openRoute('logTab')">📜 Protokoll</button>
+        <!-- NEU: Log Button ist standardmäßig unsichtbar -->
+        <button id="logBtn" onclick="openRoute('logTab')" style="display:none;">📜 Protokoll</button>
         <button id="onlineCountBtn" onclick="openRoute('onlineTab')">👥 Online (0)</button>
     </div>
 </div>
@@ -462,7 +459,7 @@
 <div id="logTab" style="display:none;">
     <div class="box box-large">
         <h2 style="color:#ffb7c5">📜 System Protokoll</h2>
-        <p style="color:#ccc;">Die letzten 50 Aktionen der Fraktion.</p>
+        <p style="color:#ccc;">Die letzten 50 Aktionen der Fraktion. (Nur für die Leitung sichtbar)</p>
         <div id="logList" style="text-align: left; max-height: 600px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px; border: 1px solid #3e3e5e;">
             Lädt Protokoll...
         </div>
@@ -473,9 +470,7 @@
     <div class="box box-large">
         <h2 style="color:#ffb7c5">🛒 Schwarzmarkt</h2>
         <p style="color:#ccc;">Kaufe illegale Gegenstände direkt über das Fraktionskonto.</p>
-        
-        <div class="shop-grid" id="shopGrid">
-            </div>
+        <div class="shop-grid" id="shopGrid"></div>
     </div>
 </div>
 
@@ -692,7 +687,8 @@ function updateOnlineStatus() {
     if(currentUser !== "Unbekannt") {
         db.collection("online").doc(currentUser).set({
             username: currentUser,
-            lastActive: Date.now()
+            lastActive: Date.now(),
+            isAdmin: isUserAdmin // NEU: Sendet mit, ob der User ein Admin ist
         }).catch(err => console.log("Fehler beim Online-Status: ", err));
     }
 }
@@ -710,8 +706,11 @@ db.collection("online").onSnapshot((snapshot) => {
     snapshot.forEach(doc => {
         let data = doc.data();
         if (now - data.lastActive < 30000) {
+            // NEU: Wenn der User Admin ist, hänge einen goldenen Stern an den Namen
+            let adminStar = data.isAdmin ? ' <span style="color:#ffcc00;" title="Fraktionsleitung">⭐</span>' : '';
+            
             onlineHtml += `<div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1.1em;">
-                            🟢 <span style="color: #fff; font-weight: bold; margin-left: 10px;">${data.username}</span>
+                            🟢 <span style="color: #fff; font-weight: bold; margin-left: 10px;">${data.username}${adminStar}</span>
                            </div>`;
             count++;
         }
@@ -818,7 +817,7 @@ function showDashboard() {
     document.getElementById('westenTab').style.display = "none";
     document.getElementById('munitionTab').style.display = "none";
     document.getElementById('geldwaescheTab').style.display = "none"; 
-    document.getElementById('schwarzmarktTab').style.display = "none"; // Versteckt Schwarzmarkt
+    document.getElementById('schwarzmarktTab').style.display = "none"; 
     document.getElementById('timerTab').style.display = "none";
     document.getElementById('smeltTab').style.display = "none";
     document.getElementById('mapTab').style.display = "none";
@@ -852,15 +851,12 @@ function checkCraft() {
     let data = rezepte[item];
     let result = document.getElementById("result");
     let startBtn = document.getElementById("startBtn");
-
     if (!data) { result.innerText = "Bitte Waffe wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
-
     let fehlend = [];
     for (let t in data.mats) {
         let need = data.mats[t] * amount; let have = parseInt(document.getElementById(t)?.value) || 0;
         if (have < need) fehlend.push(`${t} (${need - have})`);
     }
-
     if (fehlend.length === 0) { result.innerText = "✅ Ressourcen bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block"; } 
     else { result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none"; }
 }
@@ -870,7 +866,6 @@ function createCraft() {
     let data = rezepte[item];
     let durationMs = data.time * amount * 1000;
     let craftName = item + (amount > 1 ? " x"+amount : "");
-
     db.collection("crafts").add({ name: craftName, startedBy: currentUser, endTime: Date.now() + durationMs, totalDuration: durationMs, paused: false, remainingTime: 0 })
     .then(() => { addLog("Waffen-Produktion gestartet", craftName); });
     openRoute('timerTab');
@@ -1111,9 +1106,14 @@ function createGeldwaesche() {
     openRoute('timerTab');
 }
 
-// --- ALLGEMEINE TIMER LOGIK & NEUES RENDER DESIGN ---
+// --- TIMER LOGIK ---
 function togglePause(id) {
     let c = crafts.find(x => x.id === id); if(!c) return;
+    
+    if (c.startedBy !== currentUser && !isUserAdmin) {
+        alert("Zugriff verweigert: Du kannst nur deine eigenen Prozesse pausieren.");
+        return;
+    }
     
     if (c.paused) {
         db.collection("crafts").doc(id).update({
@@ -1130,7 +1130,13 @@ function togglePause(id) {
 }
 
 function cancelCraft(id) {
-    let c = crafts.find(x => x.id === id);
+    let c = crafts.find(x => x.id === id); if(!c) return;
+    
+    if (c.startedBy !== currentUser && !isUserAdmin) {
+        alert("Zugriff verweigert: Du kannst nur deine eigenen Prozesse abbrechen.");
+        return;
+    }
+    
     if(confirm("Möchtest du diesen Vorgang wirklich abbrechen?")) {
         db.collection("crafts").doc(id).delete().then(() => {
             if(c) addLog("Produktion abgebrochen", c.name); 
@@ -1177,9 +1183,18 @@ function render() {
         let statusClass = c.paused ? "paused" : "";
         let barColor = c.paused ? "background: #ffcc00;" : "";
         
-        let pauseBtn = c.paused 
-            ? `<button class="btn-icon btn-resume" onclick="togglePause('${c.id}')" title="Fortsetzen">▶ Fortsetzen</button>` 
-            : `<button class="btn-icon btn-pause" onclick="togglePause('${c.id}')" title="Pausieren">⏸ Pausieren</button>`;
+        let controlsHtml = "";
+        if (c.startedBy === currentUser || isUserAdmin) {
+            let pauseBtn = c.paused 
+                ? `<button class="btn-icon btn-resume" onclick="togglePause('${c.id}')" title="Fortsetzen">▶ Fortsetzen</button>` 
+                : `<button class="btn-icon btn-pause" onclick="togglePause('${c.id}')" title="Pausieren">⏸ Pausieren</button>`;
+
+            controlsHtml = `
+            <div class="craft-controls">
+                ${pauseBtn}
+                <button class="btn-icon btn-cancel" onclick="cancelCraft('${c.id}')" title="Abbrechen">✖ Abbrechen</button>
+            </div>`;
+        }
 
         list.innerHTML += `
         <div class="craftItem ${statusClass}">
@@ -1193,10 +1208,7 @@ function render() {
             <div class="progressBar">
                 <div class="progress" style="width:${percent}%; ${barColor}"></div>
             </div>
-            <div class="craft-controls">
-                ${pauseBtn}
-                <button class="btn-icon btn-cancel" onclick="cancelCraft('${c.id}')" title="Abbrechen">✖ Abbrechen</button>
-            </div>
+            ${controlsHtml}
         </div>`;
     });
 }
@@ -1213,7 +1225,7 @@ if(oreInput) oreInput.addEventListener("input", (e) => { document.getElementById
 let metalInput = document.getElementById("metalInput");
 if(metalInput) metalInput.addEventListener("input", (e) => { document.getElementById("frameOutput").innerText = "Ertrag: " + Math.floor((parseInt(e.target.value) || 0) / 7) + " Rahmen"; });
 
-// --- NEU: SCHWARZMARKT LOGIK ---
+// --- SCHWARZMARKT LOGIK ---
 const shopItems = [
     { name: "Messer", cat: "Nahkampfwaffen", price: "12.375 €", icon: "🔪" },
     { name: "Baseballschläger", cat: "Nahkampfwaffen", price: "13.200 €", icon: "🏏" },
@@ -1259,9 +1271,7 @@ function renderShop() {
         </div>`;
     });
 }
-// Render the shop once on load
 renderShop();
-
 
 // --- FIREBASE MAP LOGIK ---
 let currentSelectedMarkerIndex = null;
@@ -1430,14 +1440,17 @@ fetch('/api/user')
             document.getElementById('userNameDisplay').innerText = data.username;
             document.getElementById('userProfile').style.display = "flex";
             
-            updateOnlineStatus();
-            
             if(data.isAdmin) {
                 isUserAdmin = true; 
                 document.getElementById('deleteAllBtn').style.display = "block";
                 document.getElementById('deleteSingleBtn').style.display = "block";
                 document.getElementById('editSingleBtn').style.display = "block"; 
+                // NEU: Protokoll Button wird hier für Admins eingeblendet
+                document.getElementById('logBtn').style.display = "inline-block"; 
             }
+            
+            // NEU: Den Online-Status erst pushen, wenn geprüft wurde, ob man Admin ist
+            updateOnlineStatus();
         }
     })
     .catch(error => console.log("Fehler beim Laden des Users:", error));
