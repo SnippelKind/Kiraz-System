@@ -37,7 +37,6 @@
         border: 1px solid rgba(255, 183, 197, 0.3);
     }
 
-    /* NEU: Das Profil rechts oben */
     .user-profile {
         position: fixed;
         top: 20px;
@@ -55,7 +54,6 @@
         gap: 10px;
     }
 
-    /* Dashboard Grid Styles */
     .grid-container {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -254,7 +252,6 @@
 </head>
 <body>
 
-<!-- NEU: Das Profil-Div -->
 <div id="userProfile" class="user-profile" style="display: none;">
     👤 <span id="userNameDisplay">Lädt...</span>
 </div>
@@ -335,7 +332,8 @@
             <div class="legend-container">
                 <h3 style="color: #ffb7c5; margin-top: 0; text-align: center; border-bottom: 1px solid #3e3e5e; padding-bottom: 10px;">Legende</h3>
                 <div id="legendList"></div>
-                <button class="btn-danger" style="margin-top: 20px;" onclick="clearAllMarkers()">🗑 Alle löschen</button>
+                <!-- NEU: ID hinzugefügt und per display:none versteckt -->
+                <button id="deleteAllBtn" class="btn-danger" style="margin-top: 20px; display: none;" onclick="clearAllMarkers()">🗑 Alle löschen</button>
             </div>
 
             <div class="map-wrapper" id="mapWrapperScroll">
@@ -359,7 +357,8 @@
             <div id="miniMapZoom"></div>
         </div>
         
-        <button class="btn-danger" style="width:100%; border-radius:10px; padding:15px; font-weight:bold; border:none; cursor:pointer;" onclick="deleteCurrentMarker()">🗑 Diesen Punkt löschen</button>
+        <!-- NEU: ID hinzugefügt und per display:none versteckt -->
+        <button id="deleteSingleBtn" class="btn-danger" style="width:100%; border-radius:10px; padding:15px; font-weight:bold; border:none; cursor:pointer; display:none;" onclick="deleteCurrentMarker()">🗑 Diesen Punkt löschen</button>
     </div>
 </div>
 
@@ -658,13 +657,20 @@ function clearAllMarkers() {
 
 renderMapMarkers();
 
-// --- NEU: Discord-Namen laden ---
+// --- NEU: Discord-Namen laden UND Admin Rechte abfragen ---
 fetch('/api/user')
     .then(response => response.json())
     .then(data => {
         if(data.username) {
+            // Namen anzeigen
             document.getElementById('userNameDisplay').innerText = data.username;
             document.getElementById('userProfile').style.display = "flex";
+            
+            // Wenn der User Admin ist, schalte die Lösch-Buttons frei!
+            if(data.isAdmin) {
+                document.getElementById('deleteAllBtn').style.display = "block";
+                document.getElementById('deleteSingleBtn').style.display = "block";
+            }
         }
     })
     .catch(error => console.log("Fehler beim Laden des Users:", error));
