@@ -551,7 +551,12 @@ function tick() {
         if (!c.paused && now >= c.endTime) {
             let sound = document.getElementById("sound");
             if(sound) sound.play().catch(e => console.log("Sound geblockt"));
-            db.collection("crafts").doc(c.id).delete();
+            
+            // WICHTIG: Nur derjenige, der den Timer gestartet hat, darf ihn automatisch löschen!
+            // Das verhindert, dass Spieler mit falschen PC-Uhrzeiten die Timer für alle killen.
+            if (c.startedBy === currentUser) {
+                db.collection("crafts").doc(c.id).delete();
+            }
         }
     });
     render(); 
