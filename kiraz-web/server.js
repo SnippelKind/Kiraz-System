@@ -64,10 +64,15 @@ app.get('/callback', async (req, res) => {
         });
 
         const roles = memberResponse.data.roles; // Array aller Rollen-IDs des Users
+        
+        // --- NEU: Den Discord-Namen auslesen ---
+        const discordUser = memberResponse.data.user;
+        const displayName = discordUser.global_name || discordUser.username;
 
         // Prüfe ob die Rolle dabei ist
         if (roles.includes(REQUIRED_ROLE_ID)) {
             req.session.isAuthorized = true; // Türsteher sagt JA
+            req.session.username = displayName; // Speichert den Namen in der Session
             res.redirect('/dashboard');
         } else {
             res.status(403).send('<h1>Zugriff verweigert</h1><p>Du bist zwar auf dem Server, hast aber nicht die benötigte Rolle.</p>');
@@ -76,6 +81,15 @@ app.get('/callback', async (req, res) => {
     } catch (error) {
         console.error("Fehler bei Discord API:", error.response ? error.response.data : error.message);
         res.status(403).send('<h1>Zugriff verweigert</h1><p>Du bist nicht auf dem Discord-Server oder ein Fehler ist aufgetreten.</p>');
+    }
+});
+
+// --- NEU: Kleine API, damit das Dashboard den Namen abfragen kann ---
+app.get('/api/user', (req, res) => {
+    if (req.session.isAuthorized && req.session.username) {
+        res.json({ username: req.session.username });
+    } else {
+        res.status(401).json({ error: "Nicht eingeloggt" });
     }
 });
 
