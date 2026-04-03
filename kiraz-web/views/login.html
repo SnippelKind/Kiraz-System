@@ -1,31 +1,118 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <title>KIRAZ System - Login</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif; background: #0f0f1a; color: white;
-            display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;
-            text-align: center;
-        }
-        .login-box {
-            background: #1e1e2f; padding: 40px; border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); border: 1px solid #ffb7c5;
-        }
-        .btn-discord {
-            display: inline-block; background: #5865F2; color: white;
-            padding: 15px 30px; font-size: 1.2em; font-weight: bold; text-decoration: none;
-            border-radius: 10px; margin-top: 20px; transition: 0.3s;
-        }
-        .btn-discord:hover { background: #4752C4; transform: scale(1.05); }
-    </style>
+<meta charset="UTF-8">
+<title>KIRAZ Crafting System v2.9 - Discord Login</title>
+
+<style>
+    body {
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background: #0f0f1a;
+        background: radial-gradient(circle, #1e1e2f 0%, #0f0f1a 100%);
+        background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('/public/japan-fantasy-landscape.jpg');
+        background-attachment: fixed;
+        background-size: cover;
+        color: white;
+        text-align: center;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }
+
+    .login-container {
+        background: rgba(25, 25, 40, 0.95);
+        padding: 40px;
+        border-radius: 25px;
+        width: 90%;
+        max-width: 500px;
+        border: 1px solid #3e3e5e;
+        box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* NEU: Logo-Stil */
+    #login-logo {
+        width: 150px;
+        height: 150px;
+        display: block;
+        margin-bottom: 30px;
+        box-shadow: 0 0 20px rgba(255, 183, 197, 0.4);
+        border-radius: 50%; /* Optional, falls das Logo rund sein soll */
+    }
+
+    .login-header {
+        font-size: 2.2em;
+        margin-bottom: 10px;
+        color: #ffb7c5;
+        text-shadow: 0 0 20px rgba(255, 183, 197, 0.6), 2px 2px 5px rgba(0,0,0,0.8);
+    }
+
+    .login-subtext {
+        font-size: 1.1em;
+        color: #ccc;
+        margin-bottom: 40px;
+        line-height: 1.5;
+    }
+
+    /* NEU: Discord Login Button Stil */
+    .btn-discord {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background-color: #5865F2; /* Discord Blau */
+        color: white;
+        text-decoration: none;
+        padding: 15px 30px;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 1.2em;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    .btn-discord:hover {
+        background-color: #4752C4; /* Etwas dunkler beim Hover */
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(88, 101, 242, 0.5); /* Glowing-Effekt */
+    }
+
+    .btn-discord:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* Discord Glyphe (SVG) */
+    .discord-icon {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+    }
+
+</style>
 </head>
 <body>
-    <div class="login-box">
-        <h1 style="color: #ffb7c5;">KIRAZ SYSTEM</h1>
-        <p>Zugriff nur für autorisierte Fraktionsmitglieder.</p>
-        <a href="/login" class="btn-discord">Mit Discord einloggen</a>
-    </div>
+
+<div class="login-container">
+    <img id="login-logo" src="image_2.png" alt="KIRAZ Logo">
+    
+    <h1 class="login-header">KIRAZ Crafting System v2.9</h1>
+    <p class="login-subtext">Melde dich an, um auf das Fraktions-Dashboard für GPS-Routen, Crafting und Protokollierung zuzugreifen.</p>
+    
+    <a href="#" class="btn-discord">
+        <svg class="discord-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.71.2564-3.42.2564-5.1126 0-.1636-.3847-.4031-.8742-.6182-1.2495a.077.077 0 00-.0785-.0371 19.7357 19.7357 0 00-4.8851 1.5152.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5077 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276 14.0326 14.0326 0 001.2263-1.9926.0763.0763 0 00-.0416-.1057 13.0276 13.0276 0 01-1.8723-.8934.0769.0769 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1971.3728.2914a.077.077 0 01-.0066.1277 12.2707 12.2707 0 01-1.8732.8934.0766.0766 0 00-.0407.1067 13.9968 13.9968 0 001.2263 1.9926.0761.0761 0 00.0842.0286c1.961-.6067 3.9495-1.5217 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189z"/>
+        </svg>
+        <span>Login mit Discord</span>
+    </a>
+</div>
+
 </body>
 </html>
