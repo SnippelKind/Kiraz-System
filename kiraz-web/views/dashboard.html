@@ -2,7 +2,11 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>KIRAZ Crafting System v2.9</title>
+<title>KIRAZ ROUTEN NETZWERK</title>
+
+<!-- NEU: Firebase Bibliotheken einbinden -->
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
 
 <style>
     body {
@@ -332,7 +336,6 @@
             <div class="legend-container">
                 <h3 style="color: #ffb7c5; margin-top: 0; text-align: center; border-bottom: 1px solid #3e3e5e; padding-bottom: 10px;">Legende</h3>
                 <div id="legendList"></div>
-                <!-- NEU: ID hinzugefügt und per display:none versteckt -->
                 <button id="deleteAllBtn" class="btn-danger" style="margin-top: 20px; display: none;" onclick="clearAllMarkers()">🗑 Alle löschen</button>
             </div>
 
@@ -357,7 +360,6 @@
             <div id="miniMapZoom"></div>
         </div>
         
-        <!-- NEU: ID hinzugefügt und per display:none versteckt -->
         <button id="deleteSingleBtn" class="btn-danger" style="width:100%; border-radius:10px; padding:15px; font-weight:bold; border:none; cursor:pointer; display:none;" onclick="deleteCurrentMarker()">🗑 Diesen Punkt löschen</button>
     </div>
 </div>
@@ -411,10 +413,25 @@
 <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
 
 <script>
+// --- FIREBASE INITIALISIERUNG ---
+const firebaseConfig = {
+  apiKey: "AIzaSyDO4axgbMlOp_WFtPZuahNh_glJZXbSBZQ",
+  authDomain: "kiraz-software.firebaseapp.com",
+  projectId: "kiraz-software",
+  storageBucket: "kiraz-software.firebasestorage.app",
+  messagingSenderId: "1043597215258",
+  appId: "1:1043597215258:web:6d91bcbb42ec2918ba33a3"
+};
+
+// Startet Firebase und die Datenbank (Firestore)
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+
+// --- ALTE LOKALE VARIABLEN ---
 let crafts = [];
 try { crafts = JSON.parse(localStorage.getItem("crafts")) || []; } catch(e) {}
-let mapMarkers = [];
-try { mapMarkers = JSON.parse(localStorage.getItem("mapMarkers")) || []; } catch(e) {}
+let mapMarkers = []; // Wird jetzt von Firebase gefüllt!
 
 const rezepte = {
     "SNS Pistole": { mats: { "Waffenrahmen": 15, "Schlagbolzen": 25, "Riegel": 35 }, time: 1320 },
@@ -545,7 +562,6 @@ function format(s) {
 }
 
 function save() { try { localStorage.setItem("crafts", JSON.stringify(crafts)); } catch(e){} }
-function saveMapMarkers() { try { localStorage.setItem("mapMarkers", JSON.stringify(mapMarkers)); } catch(e){} }
 
 setInterval(tick, 1000); render();
 
@@ -554,7 +570,23 @@ if(oreInput) oreInput.addEventListener("input", (e) => { document.getElementById
 let metalInput = document.getElementById("metalInput");
 if(metalInput) metalInput.addEventListener("input", (e) => { document.getElementById("frameOutput").innerText = "Ertrag: " + Math.floor((parseInt(e.target.value) || 0) / 7) + " Rahmen"; });
 
+
+// --- NEUE FIREBASE MAP LOGIK ---
 let currentSelectedMarkerIndex = null;
+
+// Live-Listener: Sobald sich in Firebase was ändert, updatet sich die Karte sofort!
+db.collection("markers").onSnapshot((querySnapshot) => {
+    mapMarkers = [];
+    querySnapshot.forEach((doc) => {
+        mapMarkers.push({
+            id: doc.id,         // Die einmalige Firebase ID (wichtig zum Löschen)
+            x: doc.data().x,
+            y: doc.data().y,
+            name: doc.data().name
+        });
+    });
+    renderMapMarkers();
+});
 
 function renderMapMarkers() {
     const area = document.getElementById("markersArea");
@@ -599,9 +631,12 @@ function addMapMarker(e) {
     let routeName = prompt("Welche Route / Welcher Punkt befindet sich hier? (z.B. Waffen, Meth)");
     
     if (routeName && routeName.trim() !== "") {
-        mapMarkers.push({ x: x, y: y, name: routeName });
-        saveMapMarkers();
-        renderMapMarkers();
+        // Punkt in Firebase speichern (statt in LocalStorage)
+        db.collection("markers").add({
+            x: x,
+            y: y,
+            name: routeName
+        }).catch((error) => console.error("Fehler beim Speichern:", error));
     }
 }
 
@@ -638,10 +673,15 @@ function closeMarkerModal() {
 function deleteCurrentMarker() {
     if(currentSelectedMarkerIndex !== null) {
         if(confirm("Möchtest du diesen Punkt wirklich entfernen?")) {
-            mapMarkers.splice(currentSelectedMarkerIndex, 1);
-            saveMapMarkers();
-            renderMapMarkers();
-            closeMarkerModal();
+            // Holt sich die einmalige ID des Punktes
+            const markerId = mapMarkers[currentSelectedMarkerIndex].id;
+            
+            // Punkt aus Firebase löschen
+            db.collection("markers").doc(markerId).delete()
+            .then(() => {
+                closeMarkerModal();
+            })
+            .catch((error) => console.error("Fehler beim Löschen:", error));
         }
     }
 }
@@ -649,15 +689,15 @@ function deleteCurrentMarker() {
 function clearAllMarkers() {
     if(mapMarkers.length === 0) return;
     if(confirm("Sollen WIRKLICH ALLE Marker gelöscht werden?")) {
-        mapMarkers = [];
-        saveMapMarkers();
-        renderMapMarkers();
+        // Alle Punkte aus Firebase löschen
+        mapMarkers.forEach(m => {
+            db.collection("markers").doc(m.id).delete();
+        });
     }
 }
 
-renderMapMarkers();
 
-// --- NEU: Discord-Namen laden UND Admin Rechte abfragen ---
+// --- Discord-Namen laden UND Admin Rechte abfragen ---
 fetch('/api/user')
     .then(response => response.json())
     .then(data => {
