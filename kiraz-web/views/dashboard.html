@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>KIRAZ Routen NETZWERK</title>
+<title>KIRAZ Crafting System v2.9 - Admin Map Update</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
@@ -40,10 +40,11 @@
         border: 1px solid rgba(255, 183, 197, 0.3);
     }
 
+    /* NEU: Profil nach oben Links verschoben */
     .user-profile {
         position: fixed;
         top: 20px;
-        right: 20px;
+        left: 20px;
         background: rgba(20, 20, 35, 0.95);
         border: 1px solid #ffb7c5;
         padding: 10px 20px;
@@ -110,7 +111,7 @@
     }
 
     .tabs { margin-top: 30px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
-    .tabs button, .btn-home, .btn-danger {
+    .tabs button, .btn-home, .btn-danger, .btn-edit {
         padding: 15px 30px; border: none; border-radius: 12px;
         background: #ffb7c5; cursor: pointer; font-weight: bold;
         transition: 0.3s; color: #121212; text-transform: uppercase;
@@ -118,10 +119,14 @@
     }
     .tabs button:hover, .btn-home:hover { background: #fff; transform: translateY(-2px); }
 
-    .btn-home { position: fixed; top: 20px; left: 20px; z-index: 100; padding: 10px 20px; }
+    /* NEU: Home Button nach unten verschoben, damit er nicht mit dem Profil überlappt */
+    .btn-home { position: fixed; top: 80px; left: 20px; z-index: 100; padding: 10px 20px; }
 
     .btn-danger { background: #ff6b6b; color: white; margin-top: 20px; width: 100%; }
     .btn-danger:hover { background: #ff4c4c; }
+    
+    .btn-edit { background: #5bc0de; color: white; width: 100%; margin-bottom: 10px; }
+    .btn-edit:hover { background: #31b0d5; }
 
     .box {
         background: rgba(25, 25, 40, 0.95); padding: 30px;
@@ -236,13 +241,12 @@
     .minimap-container {
         width: 100%; height: 250px; border: 2px solid #ffb7c5; 
         border-radius: 10px; overflow: hidden; position: relative; 
-        margin-top: 15px; background: #1a1a2e; /* Hintergrund für leere Bilder */
+        margin-top: 15px; margin-bottom: 20px; background: #1a1a2e; 
         display: flex; justify-content: center; align-items: center; color: #666; font-weight: bold;
     }
 
-    /* NEU: Zoom Foto im Modal */
     #miniMapZoomFoto {
-        width: 100%; height: 100%; object-fit: cover; /* Bild füllt den Container ohne Verzerrung */
+        width: 100%; height: 100%; object-fit: cover; 
     }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
@@ -321,8 +325,8 @@
 
 <div id="mapTab" style="display:none;">
     <div class="box box-large">
-        <h2 style="color:#ffb7c5">📍 Interaktive Routen Karte - GPS Foto Upgrade</h2>
-        <p style="color:#ccc;">Klicke auf die Karte, um einen Punkt zu setzen. Füge im GPS-Namen eine Foto-URL ein, um den Zoom anzuzeigen.</p>
+        <h2 style="color:#ffb7c5">📍 Interaktive Routen Karte</h2>
+        <p id="mapInstructionText" style="color:#ccc;">Legende und Karte. (Nur die Fraktionsleitung kann Punkte setzen und bearbeiten)</p>
         
         <div class="map-layout">
             <div class="legend-container">
@@ -345,13 +349,14 @@
     <div class="box modal-box">
         <span class="close-btn" onclick="closeMarkerModal()">✖</span>
         <h2 id="modalMarkerName" style="color:#ffb7c5; margin-top: 0;">Routen-Punkt</h2>
-        <p style="color:#aaa; font-size:0.9em;">GPS Zoom-Ansicht (Echtes Foto)</p>
+        <p style="color:#aaa; font-size:0.9em;">GPS Zoom-Ansicht</p>
         
         <div class="minimap-container" id="minimapContainer">
             <img id="miniMapZoomFoto" src="" alt="GPS Foto fehlt">
             <span id="miniMapMissingText" style="display:none;">Kein Foto hinterlegt</span>
         </div>
         
+        <button id="editSingleBtn" class="btn-edit" style="display:none;" onclick="editCurrentMarker()">✏️ Punkt bearbeiten</button>
         <button id="deleteSingleBtn" class="btn-danger" style="width:100%; border-radius:10px; padding:15px; font-weight:bold; border:none; cursor:pointer; display:none;" onclick="deleteCurrentMarker()">🗑 Diesen Punkt löschen</button>
     </div>
 </div>
@@ -415,12 +420,12 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Variable für den eingeloggten User
+// NEU: Globale Variable für Admin-Status
 let currentUser = "Unbekannt"; 
-let mapMarkers = []; 
+let isUserAdmin = false; 
 
-// --- FIREBASE TIMER LOGIK ---
 let crafts = [];
+let mapMarkers = []; 
 
 db.collection("crafts").onSnapshot((querySnapshot) => {
     crafts = [];
@@ -536,7 +541,10 @@ function tick() {
         if (!c.paused && now >= c.endTime) {
             let sound = document.getElementById("sound");
             if(sound) sound.play().catch(e => console.log("Sound geblockt"));
-            db.collection("crafts").doc(c.id).delete();
+            
+            if (c.startedBy === currentUser) {
+                db.collection("crafts").doc(c.id).delete();
+            }
         }
     });
     render(); 
@@ -576,7 +584,7 @@ if(oreInput) oreInput.addEventListener("input", (e) => { document.getElementById
 let metalInput = document.getElementById("metalInput");
 if(metalInput) metalInput.addEventListener("input", (e) => { document.getElementById("frameOutput").innerText = "Ertrag: " + Math.floor((parseInt(e.target.value) || 0) / 7) + " Rahmen"; });
 
-// --- FIREBASE MAP LOGIK (Foto Upgrade) ---
+// --- FIREBASE MAP LOGIK ---
 let currentSelectedMarkerIndex = null;
 
 db.collection("markers").onSnapshot((querySnapshot) => {
@@ -587,9 +595,13 @@ db.collection("markers").onSnapshot((querySnapshot) => {
             x: doc.data().x,
             y: doc.data().y,
             name: doc.data().name,
-            fotoUrl: doc.data().fotoUrl || "" // NEU: Holt die Foto-URL aus der Datenbank
+            fotoUrl: doc.data().fotoUrl || "" 
         });
     });
+    
+    // NEU: Sortiert die Legende alphabetisch (A-Z)
+    mapMarkers.sort((a, b) => a.name.localeCompare(b.name));
+    
     renderMapMarkers();
 });
 
@@ -619,6 +631,9 @@ function renderMapMarkers() {
 }
 
 function addMapMarker(e) {
+    // NEU: Nur Admins können Marker setzen! Wenn kein Admin, passiert einfach gar nichts.
+    if(!isUserAdmin) return;
+
     if(e.target.classList.contains('marker') || e.target.classList.contains('marker-label')) return;
 
     const mapImg = document.getElementById("gtaMapImage");
@@ -629,18 +644,16 @@ function addMapMarker(e) {
 
     if (x < 0 || x > 100 || y < 0 || y > 100) return;
 
-    // FOTO UPGRADE: Prompt nach Name UND Foto-URL
     let routeName = prompt("GPS NAME (z.B. Waffen Fabrik A):");
-    if(!routeName || routeName.trim() === "") return; // Abbrech-Schutz
+    if(!routeName || routeName.trim() === "") return;
 
     let routeFotoUrl = prompt("GPS FOTO-URL (Imgur, Discord-Link etc.) - Optional:");
     
-    // Punkt in Firebase speichern (inkl. fotoUrl)
     db.collection("markers").add({
         x: x,
         y: y,
         name: routeName.trim(),
-        fotoUrl: routeFotoUrl ? routeFotoUrl.trim() : "" // Speichert leeren String, falls kein Foto
+        fotoUrl: routeFotoUrl ? routeFotoUrl.trim() : "" 
     }).catch((error) => console.error("Fehler beim Speichern in Firebase:", error));
 }
 
@@ -663,7 +676,6 @@ function openMarkerModal(e, index) {
     
     document.getElementById("modalMarkerName").innerText = marker.name;
     
-    // FOTO UPGRADE: Bild im Modal anzeigen
     const foto = document.getElementById("miniMapZoomFoto");
     const missingText = document.getElementById("miniMapMissingText");
     
@@ -672,7 +684,7 @@ function openMarkerModal(e, index) {
         foto.style.display = "block";
         missingText.style.display = "none";
     } else {
-        foto.src = ""; // Quelle leeren
+        foto.src = ""; 
         foto.style.display = "none";
         missingText.style.display = "block";
     }
@@ -685,8 +697,28 @@ function closeMarkerModal() {
     currentSelectedMarkerIndex = null;
 }
 
+// NEU: Bearbeiten Funktion für Admins (Name und Bild ändern)
+function editCurrentMarker() {
+    if(currentSelectedMarkerIndex !== null && isUserAdmin) {
+        const m = mapMarkers[currentSelectedMarkerIndex];
+        
+        let newName = prompt("Neuer GPS Name:", m.name);
+        if(newName === null || newName.trim() === "") return; // Wenn abgebrochen wird
+        
+        let newFotoUrl = prompt("Neue GPS FOTO-URL (leer lassen für keins):", m.fotoUrl || "");
+        if(newFotoUrl === null) return;
+        
+        db.collection("markers").doc(m.id).update({
+            name: newName.trim(),
+            fotoUrl: newFotoUrl.trim()
+        }).then(() => {
+            closeMarkerModal(); // Modal schließt sich und die Karte rendert dank Live-Datenbank sofort neu
+        }).catch((error) => console.error("Fehler beim Bearbeiten:", error));
+    }
+}
+
 function deleteCurrentMarker() {
-    if(currentSelectedMarkerIndex !== null) {
+    if(currentSelectedMarkerIndex !== null && isUserAdmin) {
         if(confirm("Möchtest du diesen GPS-Punkt wirklich entfernen?")) {
             const markerId = mapMarkers[currentSelectedMarkerIndex].id;
             db.collection("markers").doc(markerId).delete()
@@ -715,11 +747,16 @@ fetch('/api/user')
             document.getElementById('userNameDisplay').innerText = data.username;
             document.getElementById('userProfile').style.display = "flex";
             
+            // Wenn der User Admin ist, erlaube Map-Rechte und zeige Buttons
             if(data.isAdmin) {
+                isUserAdmin = true; 
                 document.getElementById('deleteAllBtn').style.display = "block";
                 document.getElementById('deleteSingleBtn').style.display = "block";
+                document.getElementById('editSingleBtn').style.display = "block"; // Neuer Bearbeiten Button
             }
         }
     })
     .catch(error => console.log("Fehler beim Laden des Users:", error));
 </script>
+</body>
+</html>
