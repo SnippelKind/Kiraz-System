@@ -287,7 +287,8 @@
             <img src="/public/EPHI%20ROUTE.png" alt="Ephi" onerror="this.style.opacity='0'">
             <div class="route-title">Ephi</div>
         </div>
-        <div class="route-card" onclick="alert('Kokain Route folgt...')">
+        <!-- NEU: Kokain Route angebunden -->
+        <div class="route-card" onclick="openRoute('kokainTab')">
             <div class="fallback-icon">🌿</div>
             <img src="/public/KOKAIN%20ROUTE.png" alt="Kokain" onerror="this.style.opacity='0'">
             <div class="route-title">Kokain</div>
@@ -409,7 +410,7 @@
     </div>
 </div>
 
-<!-- NEU: Ephi Labor Tab -->
+<!-- Ephi Labor Tab -->
 <div id="ephiTab" style="display:none;">
     <div class="box">
         <h2 style="color:#ffb7c5">⚗️ Ephi Labor</h2>
@@ -423,6 +424,21 @@
         <div id="ephiInputs"></div>
         <p id="ephiResult" class="result">Bitte Prozess wählen</p>
         <button id="ephiStartBtn" class="btn-action" onclick="createEphiCraft()" style="display:none;">▶ Produktion starten</button>
+    </div>
+</div>
+
+<!-- NEU: Kokain Labor Tab -->
+<div id="kokainTab" style="display:none;">
+    <div class="box">
+        <h2 style="color:#ffb7c5">🌿 Kokain Labor</h2>
+        <select id="kokainSelect" onchange="loadKokainRecipe()">
+            <option value="">-- Prozess wählen --</option>
+            <option value="Kokain">Kokain Blätter ➔ Kokain</option>
+        </select>
+        <input type="number" id="kokainAmount" placeholder="Anzahl der Durchläufe..." min="1" oninput="checkKokainCraft();">
+        <div id="kokainInputs"></div>
+        <p id="kokainResult" class="result">Bitte Prozess wählen</p>
+        <button id="kokainStartBtn" class="btn-action" onclick="createKokainCraft()" style="display:none;">▶ Produktion starten</button>
     </div>
 </div>
 
@@ -551,6 +567,7 @@ db.collection("crafts").onSnapshot((querySnapshot) => {
     render(); 
 });
 
+// --- REZEPTE ---
 const rezepte = {
     "SNS Pistole": { mats: { "Waffenrahmen": 15, "Schlagbolzen": 25, "Riegel": 35 }, time: 1320 },
     "Normale Pistole": { mats: { "Waffenrahmen": 45, "Schlagbolzen": 30, "Riegel": 35 }, time: 2000 },
@@ -560,17 +577,22 @@ const rezepte = {
     "Abgesägte Schrottflinte": { mats: { "Waffenrahmen": 150, "Schlagbolzen": 120, "Riegel": 150, "Bargeld": 100000 }, time: 4200 }
 };
 
-// NEU: Ephi Rezepte
 const ephiRezepte = {
     "Froschhaut": { mats: { "Frosch": 1 }, time: 15 },
     "Ephi Extrakt": { mats: { "Froschhaut": 1 }, time: 20 },
     "Ephi": { mats: { "Ephi Extrakt": 1 }, time: 12 }
 };
 
+// NEU: Kokain Rezept
+const kokainRezepte = {
+    "Kokain": { mats: { "Benzin": 1, "Methanol": 2, "Kokain Blätter": 3 }, time: 4 }
+};
+
 function showDashboard() {
     document.getElementById('mainDashboard').style.display = "block";
     document.getElementById('craftTab').style.display = "none";
-    document.getElementById('ephiTab').style.display = "none"; // Versteckt Ephi Tab
+    document.getElementById('ephiTab').style.display = "none";
+    document.getElementById('kokainTab').style.display = "none"; // Versteckt Kokain Tab
     document.getElementById('timerTab').style.display = "none";
     document.getElementById('smeltTab').style.display = "none";
     document.getElementById('mapTab').style.display = "none";
@@ -586,6 +608,7 @@ function openRoute(tabId) {
     window.scrollTo(0,0);
 }
 
+// --- WAFFEN LOGIK ---
 function loadRecipe() {
     const inputs = document.getElementById("inputs"); inputs.innerHTML = "";
     let item = document.getElementById("itemSelect").value;
@@ -641,7 +664,7 @@ function createCraft() {
     openRoute('timerTab');
 }
 
-// --- NEU: EPHI LOGIK ---
+// --- EPHI LOGIK ---
 function loadEphiRecipe() {
     const inputs = document.getElementById("ephiInputs"); inputs.innerHTML = "";
     let item = document.getElementById("ephiSelect").value;
@@ -698,6 +721,65 @@ function createEphiCraft() {
     openRoute('timerTab');
 }
 
+// --- NEU: KOKAIN LOGIK ---
+function loadKokainRecipe() {
+    const inputs = document.getElementById("kokainInputs"); inputs.innerHTML = "";
+    let item = document.getElementById("kokainSelect").value;
+    let data = kokainRezepte[item];
+    if (!data) return;
+    for (let t in data.mats) {
+        // Passende Icons für Kokain Mats
+        let icon = (t === "Kokain Blätter") ? "🌿" : (t === "Benzin" ? "🛢️" : "🧪");
+        inputs.innerHTML += `<div class="material">${icon} ${t}: <input id="kokain_${t}" type="number" placeholder="Vorhanden..." oninput="checkKokainCraft()"></div>`;
+    }
+    checkKokainCraft();
+}
+
+function checkKokainCraft() {
+    let item = document.getElementById("kokainSelect").value;
+    let amount = parseInt(document.getElementById("kokainAmount").value) || 1;
+    let data = kokainRezepte[item];
+    let result = document.getElementById("kokainResult");
+    let startBtn = document.getElementById("kokainStartBtn");
+
+    if (!data) { result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+
+    let fehlend = [];
+    for (let t in data.mats) {
+        let need = data.mats[t] * amount; 
+        let have = parseInt(document.getElementById("kokain_" + t)?.value) || 0;
+        if (have < need) fehlend.push(`${t} (${need - have})`);
+    }
+
+    if (fehlend.length === 0) {
+        result.innerText = "✅ Materialien bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block";
+    } else {
+        result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none";
+    }
+}
+
+function createKokainCraft() {
+    let item = document.getElementById("kokainSelect").value;
+    let amount = parseInt(document.getElementById("kokainAmount").value) || 1;
+    let data = kokainRezepte[item];
+    let durationMs = data.time * amount * 1000;
+    let craftName = (amount > 1 ? amount + "x " : "") + item;
+
+    db.collection("crafts").add({
+        name: craftName,
+        startedBy: currentUser,
+        endTime: Date.now() + durationMs,
+        totalDuration: durationMs,
+        paused: false,
+        remainingTime: 0 
+    }).then(() => {
+        addLog("Kokain-Produktion gestartet", craftName); 
+    });
+
+    openRoute('timerTab');
+}
+
+// --- ALLGEMEINE TIMER LOGIK ---
 function togglePause(id) {
     let c = crafts.find(x => x.id === id); if(!c) return;
     
@@ -940,7 +1022,6 @@ fetch('/api/user')
             document.getElementById('userNameDisplay').innerText = data.username;
             document.getElementById('userProfile').style.display = "flex";
             
-            // Sofort einmal den Online-Status pushen, wenn der Name geladen ist
             updateOnlineStatus();
             
             if(data.isAdmin) {
