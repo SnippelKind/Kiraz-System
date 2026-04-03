@@ -428,10 +428,17 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 
-// --- ALTE LOKALE VARIABLEN ---
+// --- FIREBASE TIMER LOGIK ---
 let crafts = [];
-try { crafts = JSON.parse(localStorage.getItem("crafts")) || []; } catch(e) {}
-let mapMarkers = []; // Wird jetzt von Firebase gefüllt!
+
+// Live-Listener für Timer: Updatet sich bei allen, wenn jemand was startet, pausiert oder löscht
+db.collection("crafts").onSnapshot((querySnapshot) => {
+    crafts = [];
+    querySnapshot.forEach((doc) => {
+        crafts.push({ id: doc.id, ...doc.data() });
+    });
+    render(); 
+});
 
 const rezepte = {
     "SNS Pistole": { mats: { "Waffenrahmen": 15, "Schlagbolzen": 25, "Riegel": 35 }, time: 1320 },
@@ -498,43 +505,56 @@ function createCraft() {
     let data = rezepte[item];
     let durationMs = data.time * amount * 1000;
 
-    crafts.push({
-        id: Date.now(), name: item + (amount > 1 ? " x"+amount : ""),
-        endTime: Date.now() + durationMs, totalDuration: durationMs,
-        paused: false, lastTick: Date.now()
+    // Timer direkt in Firebase speichern
+    db.collection("crafts").add({
+        name: item + (amount > 1 ? " x"+amount : ""),
+        endTime: Date.now() + durationMs,
+        totalDuration: durationMs,
+        paused: false,
+        remainingTime: 0 // Wird nur gebraucht, wenn pausiert wird
     });
 
-    save(); openRoute('timerTab'); render();
+    openRoute('timerTab');
 }
 
 function togglePause(id) {
     let c = crafts.find(x => x.id === id); if(!c) return;
-    c.paused = !c.paused;
-    if(!c.paused) c.endTime = Date.now() + (c.endTime - c.lastTick);
-    save(); render();
+    
+    if (c.paused) {
+        // Timer fortsetzen
+        db.collection("crafts").doc(id).update({
+            paused: false,
+            endTime: Date.now() + c.remainingTime
+        });
+    } else {
+        // Timer pausieren (Restzeit ausrechnen und speichern)
+        let leftMs = c.endTime - Date.now();
+        db.collection("crafts").doc(id).update({
+            paused: true,
+            remainingTime: leftMs
+        });
+    }
 }
 
 function cancelCraft(id) {
     if(confirm("Möchtest du diesen Vorgang wirklich abbrechen?")) {
-        crafts = crafts.filter(c => c.id !== id); save(); render();
+        db.collection("crafts").doc(id).delete();
     }
 }
 
 function tick() {
-    let now = Date.now(); let changed = false;
+    let now = Date.now();
     crafts.forEach(c => {
-        if (c.paused) { c.endTime += 1000; } 
-        else {
-            if (now >= c.endTime) {
-                let sound = document.getElementById("sound");
-                if(sound) sound.play().catch(e => console.log("Sound geblockt"));
-                changed = true;
-            }
+        // Wenn der Timer abgelaufen ist und nicht pausiert ist
+        if (!c.paused && now >= c.endTime) {
+            let sound = document.getElementById("sound");
+            if(sound) sound.play().catch(e => console.log("Sound geblockt"));
+            
+            // Timer aus der Live-Datenbank löschen
+            db.collection("crafts").doc(c.id).delete();
         }
-        c.lastTick = now;
     });
-    if(changed) { crafts = crafts.filter(c => now < c.endTime); }
-    save(); render();
+    render(); // Lässt die Balken jede Sekunde flüssig weiterlaufen
 }
 
 function render() {
@@ -543,15 +563,18 @@ function render() {
     if(crafts.length === 0) { list.innerHTML = "<p style='color:#aaa;'>Keine aktiven Prozesse.</p>"; return; }
     
     crafts.forEach(c => {
-        let remainingMs = c.endTime - now;
+        // Wenn pausiert, nimm die gemerkte Restzeit. Sonst rechne sie live aus.
+        let remainingMs = c.paused ? c.remainingTime : (c.endTime - now);
         let remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
         let percent = Math.min(100, Math.max(0, 100 - (remainingMs / c.totalDuration * 100)));
+        
+        // Die Button IDs müssen jetzt in Anführungszeichen, da Firebase IDs Buchstaben enthalten!
         list.innerHTML += `
         <div class="craftItem">
             <b>${c.name}</b><br>⏳ <span style="color:#ffb7c5">${format(remainingSec)}</span>
             <div class="progressBar"><div class="progress" style="width:${percent}%"></div></div>
-            <button onclick="togglePause(${c.id})" style="padding:5px 15px; border-radius:5px; border:none; background:#77dd77; cursor:pointer;">${c.paused ? "▶" : "⏸"}</button>
-            <button onclick="cancelCraft(${c.id})" style="background:#ffb7c5; border-radius:5px; border:none; cursor:pointer; padding: 5px 15px; margin-left:10px;">❌</button>
+            <button onclick="togglePause('${c.id}')" style="padding:5px 15px; border-radius:5px; border:none; background:#77dd77; cursor:pointer;">${c.paused ? "▶" : "⏸"}</button>
+            <button onclick="cancelCraft('${c.id}')" style="background:#ffb7c5; border-radius:5px; border:none; cursor:pointer; padding: 5px 15px; margin-left:10px;">❌</button>
         </div>`;
     });
 }
@@ -561,15 +584,13 @@ function format(s) {
     return (h > 0 ? h + "h " : "") + m + "m " + sec + "s";
 }
 
-function save() { try { localStorage.setItem("crafts", JSON.stringify(crafts)); } catch(e){} }
-
-setInterval(tick, 1000); render();
+// Tick startet, um die UI flüssig zu halten
+setInterval(tick, 1000);
 
 let oreInput = document.getElementById("oreInput");
 if(oreInput) oreInput.addEventListener("input", (e) => { document.getElementById("metalOutput").innerText = "Ertrag: " + Math.floor((parseInt(e.target.value) || 0) / 2) + " Metall"; });
 let metalInput = document.getElementById("metalInput");
 if(metalInput) metalInput.addEventListener("input", (e) => { document.getElementById("frameOutput").innerText = "Ertrag: " + Math.floor((parseInt(e.target.value) || 0) / 7) + " Rahmen"; });
-
 
 // --- NEUE FIREBASE MAP LOGIK ---
 let currentSelectedMarkerIndex = null;
