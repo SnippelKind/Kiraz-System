@@ -287,28 +287,27 @@
             <img src="/public/EPHI%20ROUTE.png" alt="Ephi" onerror="this.style.opacity='0'">
             <div class="route-title">Ephi</div>
         </div>
-        <!-- NEU: Kokain Route angebunden -->
         <div class="route-card" onclick="openRoute('kokainTab')">
             <div class="fallback-icon">🌿</div>
             <img src="/public/KOKAIN%20ROUTE.png" alt="Kokain" onerror="this.style.opacity='0'">
             <div class="route-title">Kokain</div>
         </div>
-        <div class="route-card" onclick="alert('Meth Route folgt...')">
+        <div class="route-card" onclick="openRoute('methTab')">
             <div class="fallback-icon">🧊</div>
             <img src="/public/METH%20ROUTE.png" alt="Meth" onerror="this.style.opacity='0'">
             <div class="route-title">Meth</div>
         </div>
-        <div class="route-card" onclick="alert('Munition Route folgt...')">
+        <div class="route-card" onclick="openRoute('munitionTab')">
             <div class="fallback-icon">🎒</div>
             <img src="/public/MUNITION%20ROUTE.png" alt="Munition" onerror="this.style.opacity='0'">
             <div class="route-title">Munition</div>
         </div>
-        <div class="route-card" onclick="alert('Westen Route folgt...')">
+        <div class="route-card" onclick="openRoute('westenTab')">
             <div class="fallback-icon">🛡️</div>
             <img src="/public/WESTEN%20ROUTE.png" alt="Westen" onerror="this.style.opacity='0'">
             <div class="route-title">Westen</div>
         </div>
-        <div class="route-card" onclick="alert('Ecstasy Route folgt...')">
+        <div class="route-card" onclick="openRoute('ecstasyTab')">
             <div class="fallback-icon">💊</div>
             <img src="/public/ECSTASY%20ROUTE.png" alt="Ecstasy" onerror="this.style.opacity='0'">
             <div class="route-title">Ecstasy</div>
@@ -391,6 +390,7 @@
     </div>
 </div>
 
+<!-- Waffen Fabrik Tab -->
 <div id="craftTab" style="display:none;">
     <div class="box">
         <h2 style="color:#ffb7c5">🛠 Waffen Fabrik</h2>
@@ -427,7 +427,7 @@
     </div>
 </div>
 
-<!-- NEU: Kokain Labor Tab -->
+<!-- Kokain Labor Tab -->
 <div id="kokainTab" style="display:none;">
     <div class="box">
         <h2 style="color:#ffb7c5">🌿 Kokain Labor</h2>
@@ -439,6 +439,68 @@
         <div id="kokainInputs"></div>
         <p id="kokainResult" class="result">Bitte Prozess wählen</p>
         <button id="kokainStartBtn" class="btn-action" onclick="createKokainCraft()" style="display:none;">▶ Produktion starten</button>
+    </div>
+</div>
+
+<!-- Meth Labor Tab -->
+<div id="methTab" style="display:none;">
+    <div class="box">
+        <h2 style="color:#ffb7c5">🧊 Meth Labor</h2>
+        <select id="methSelect" onchange="loadMethRecipe()">
+            <option value="">-- Prozess wählen --</option>
+            <option value="Meth">Zutaten ➔ Meth</option>
+        </select>
+        <input type="number" id="methAmount" placeholder="Anzahl der Durchläufe..." min="1" oninput="checkMethCraft();">
+        <div id="methInputs"></div>
+        <p id="methResult" class="result">Bitte Prozess wählen</p>
+        <button id="methStartBtn" class="btn-action" onclick="createMethCraft()" style="display:none;">▶ Produktion starten</button>
+    </div>
+</div>
+
+<!-- Ecstasy Labor Tab -->
+<div id="ecstasyTab" style="display:none;">
+    <div class="box">
+        <h2 style="color:#ffb7c5">💊 Ecstasy Labor</h2>
+        <select id="ecstasySelect" onchange="loadEcstasyRecipe()">
+            <option value="">-- Prozess wählen --</option>
+            <option value="Ecstasy">Zutaten ➔ Ecstasy</option>
+        </select>
+        <input type="number" id="ecstasyAmount" placeholder="Anzahl der Durchläufe..." min="1" oninput="checkEcstasyCraft();">
+        <div id="ecstasyInputs"></div>
+        <p id="ecstasyResult" class="result">Bitte Prozess wählen</p>
+        <button id="ecstasyStartBtn" class="btn-action" onclick="createEcstasyCraft()" style="display:none;">▶ Produktion starten</button>
+    </div>
+</div>
+
+<!-- Westen Manufaktur Tab -->
+<div id="westenTab" style="display:none;">
+    <div class="box">
+        <h2 style="color:#ffb7c5">🛡️ Westen Manufaktur</h2>
+        <select id="westenSelect" onchange="loadWestenRecipe()">
+            <option value="">-- Weste wählen --</option>
+            <option value="Leichte Weste">Leichte Weste</option>
+            <option value="Schwere Weste">Schwere Weste</option>
+        </select>
+        <input type="number" id="westenAmount" placeholder="Anzahl der Westen..." min="1" oninput="checkWestenCraft();">
+        <div id="westenInputs"></div>
+        <p id="westenResult" class="result">Bitte Weste wählen</p>
+        <button id="westenStartBtn" class="btn-action" onclick="createWestenCraft()" style="display:none;">▶ Produktion starten</button>
+    </div>
+</div>
+
+<!-- Munition Fabrik Tab -->
+<div id="munitionTab" style="display:none;">
+    <div class="box">
+        <h2 style="color:#ffb7c5">🎒 Munitions Fabrik</h2>
+        <select id="munitionSelect" onchange="loadMunitionRecipe()">
+            <option value="">-- Magazin wählen --</option>
+            <option value="Pistolen Magazin">Pistolen Magazin</option>
+            <option value="SMG Magazin">SMG Magazin</option>
+        </select>
+        <input type="number" id="munitionAmount" placeholder="Anzahl der Magazine..." min="1" oninput="checkMunitionCraft();">
+        <div id="munitionInputs"></div>
+        <p id="munitionResult" class="result">Bitte Magazin wählen</p>
+        <button id="munitionStartBtn" class="btn-action" onclick="createMunitionCraft()" style="display:none;">▶ Produktion starten</button>
     </div>
 </div>
 
@@ -583,16 +645,38 @@ const ephiRezepte = {
     "Ephi": { mats: { "Ephi Extrakt": 1 }, time: 12 }
 };
 
-// NEU: Kokain Rezept
 const kokainRezepte = {
     "Kokain": { mats: { "Benzin": 1, "Methanol": 2, "Kokain Blätter": 3 }, time: 4 }
+};
+
+// NEU: Meth, Ecstasy, Westen, Munition Rezepte
+const methRezepte = {
+    "Meth": { mats: { "Natronlauge": 1, "Lithiumfolie": 2, "Ammoniumnitrat": 3 }, time: 4 }
+};
+
+const ecstasyRezepte = {
+    "Ecstasy": { mats: { "Koffeinpulver": 1, "Nitroethan": 2, "Methylamin": 3 }, time: 4 }
+};
+
+const westenRezepte = {
+    "Leichte Weste": { mats: { "Baumwolle": 10, "Polyethylenplatten": 10 }, time: 45 },
+    "Schwere Weste": { mats: { "Baumwolle": 50, "Polyethylenplatten": 50 }, time: 225 } // 3m 45s
+};
+
+const munitionRezepte = {
+    "Pistolen Magazin": { mats: { "Zündladungen": 2, "Projektil": 3, "Patronenhülsen": 4 }, time: 15 },
+    "SMG Magazin": { mats: { "Zündladungen": 6, "Projektil": 12, "Patronenhülsen": 16 }, time: 35 }
 };
 
 function showDashboard() {
     document.getElementById('mainDashboard').style.display = "block";
     document.getElementById('craftTab').style.display = "none";
     document.getElementById('ephiTab').style.display = "none";
-    document.getElementById('kokainTab').style.display = "none"; // Versteckt Kokain Tab
+    document.getElementById('kokainTab').style.display = "none";
+    document.getElementById('methTab').style.display = "none";
+    document.getElementById('ecstasyTab').style.display = "none";
+    document.getElementById('westenTab').style.display = "none";
+    document.getElementById('munitionTab').style.display = "none";
     document.getElementById('timerTab').style.display = "none";
     document.getElementById('smeltTab').style.display = "none";
     document.getElementById('mapTab').style.display = "none";
@@ -620,7 +704,6 @@ function loadRecipe() {
     }
     checkCraft();
 }
-
 function checkCraft() {
     let item = document.getElementById("itemSelect").value;
     let amount = parseInt(document.getElementById("craftAmount").value) || 1;
@@ -636,13 +719,9 @@ function checkCraft() {
         if (have < need) fehlend.push(`${t} (${need - have})`);
     }
 
-    if (fehlend.length === 0) {
-        result.innerText = "✅ Ressourcen bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block";
-    } else {
-        result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none";
-    }
+    if (fehlend.length === 0) { result.innerText = "✅ Ressourcen bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block"; } 
+    else { result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none"; }
 }
-
 function createCraft() {
     let item = document.getElementById("itemSelect").value;
     let amount = parseInt(document.getElementById("craftAmount").value) || 1;
@@ -650,17 +729,8 @@ function createCraft() {
     let durationMs = data.time * amount * 1000;
     let craftName = item + (amount > 1 ? " x"+amount : "");
 
-    db.collection("crafts").add({
-        name: craftName,
-        startedBy: currentUser,
-        endTime: Date.now() + durationMs,
-        totalDuration: durationMs,
-        paused: false,
-        remainingTime: 0 
-    }).then(() => {
-        addLog("Waffen-Produktion gestartet", craftName); 
-    });
-
+    db.collection("crafts").add({ name: craftName, startedBy: currentUser, endTime: Date.now() + durationMs, totalDuration: durationMs, paused: false, remainingTime: 0 })
+    .then(() => { addLog("Waffen-Produktion gestartet", craftName); });
     openRoute('timerTab');
 }
 
@@ -676,106 +746,180 @@ function loadEphiRecipe() {
     }
     checkEphiCraft();
 }
-
 function checkEphiCraft() {
-    let item = document.getElementById("ephiSelect").value;
-    let amount = parseInt(document.getElementById("ephiAmount").value) || 1;
-    let data = ephiRezepte[item];
-    let result = document.getElementById("ephiResult");
-    let startBtn = document.getElementById("ephiStartBtn");
-
+    let item = document.getElementById("ephiSelect").value; let amount = parseInt(document.getElementById("ephiAmount").value) || 1;
+    let data = ephiRezepte[item]; let result = document.getElementById("ephiResult"); let startBtn = document.getElementById("ephiStartBtn");
     if (!data) { result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
-
     let fehlend = [];
     for (let t in data.mats) {
-        let need = data.mats[t] * amount; 
-        let have = parseInt(document.getElementById("ephi_" + t)?.value) || 0;
+        let need = data.mats[t] * amount; let have = parseInt(document.getElementById("ephi_" + t)?.value) || 0;
         if (have < need) fehlend.push(`${t} (${need - have})`);
     }
-
-    if (fehlend.length === 0) {
-        result.innerText = "✅ Materialien bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block";
-    } else {
-        result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none";
-    }
+    if (fehlend.length === 0) { result.innerText = "✅ Materialien bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block"; } 
+    else { result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none"; }
 }
-
 function createEphiCraft() {
-    let item = document.getElementById("ephiSelect").value;
-    let amount = parseInt(document.getElementById("ephiAmount").value) || 1;
-    let data = ephiRezepte[item];
-    let durationMs = data.time * amount * 1000;
-    let craftName = (amount > 1 ? amount + "x " : "") + item;
-
-    db.collection("crafts").add({
-        name: craftName,
-        startedBy: currentUser,
-        endTime: Date.now() + durationMs,
-        totalDuration: durationMs,
-        paused: false,
-        remainingTime: 0 
-    }).then(() => {
-        addLog("Ephi-Produktion gestartet", craftName); 
-    });
-
+    let item = document.getElementById("ephiSelect").value; let amount = parseInt(document.getElementById("ephiAmount").value) || 1;
+    let data = ephiRezepte[item]; let durationMs = data.time * amount * 1000; let craftName = (amount > 1 ? amount + "x " : "") + item;
+    db.collection("crafts").add({ name: craftName, startedBy: currentUser, endTime: Date.now() + durationMs, totalDuration: durationMs, paused: false, remainingTime: 0 })
+    .then(() => { addLog("Ephi-Produktion gestartet", craftName); });
     openRoute('timerTab');
 }
 
-// --- NEU: KOKAIN LOGIK ---
+// --- KOKAIN LOGIK ---
 function loadKokainRecipe() {
     const inputs = document.getElementById("kokainInputs"); inputs.innerHTML = "";
     let item = document.getElementById("kokainSelect").value;
     let data = kokainRezepte[item];
     if (!data) return;
     for (let t in data.mats) {
-        // Passende Icons für Kokain Mats
         let icon = (t === "Kokain Blätter") ? "🌿" : (t === "Benzin" ? "🛢️" : "🧪");
         inputs.innerHTML += `<div class="material">${icon} ${t}: <input id="kokain_${t}" type="number" placeholder="Vorhanden..." oninput="checkKokainCraft()"></div>`;
     }
     checkKokainCraft();
 }
-
 function checkKokainCraft() {
-    let item = document.getElementById("kokainSelect").value;
-    let amount = parseInt(document.getElementById("kokainAmount").value) || 1;
-    let data = kokainRezepte[item];
-    let result = document.getElementById("kokainResult");
-    let startBtn = document.getElementById("kokainStartBtn");
-
+    let item = document.getElementById("kokainSelect").value; let amount = parseInt(document.getElementById("kokainAmount").value) || 1;
+    let data = kokainRezepte[item]; let result = document.getElementById("kokainResult"); let startBtn = document.getElementById("kokainStartBtn");
     if (!data) { result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
-
     let fehlend = [];
     for (let t in data.mats) {
-        let need = data.mats[t] * amount; 
-        let have = parseInt(document.getElementById("kokain_" + t)?.value) || 0;
+        let need = data.mats[t] * amount; let have = parseInt(document.getElementById("kokain_" + t)?.value) || 0;
         if (have < need) fehlend.push(`${t} (${need - have})`);
     }
-
-    if (fehlend.length === 0) {
-        result.innerText = "✅ Materialien bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block";
-    } else {
-        result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none";
-    }
+    if (fehlend.length === 0) { result.innerText = "✅ Materialien bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block"; } 
+    else { result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none"; }
+}
+function createKokainCraft() {
+    let item = document.getElementById("kokainSelect").value; let amount = parseInt(document.getElementById("kokainAmount").value) || 1;
+    let data = kokainRezepte[item]; let durationMs = data.time * amount * 1000; let craftName = (amount > 1 ? amount + "x " : "") + item;
+    db.collection("crafts").add({ name: craftName, startedBy: currentUser, endTime: Date.now() + durationMs, totalDuration: durationMs, paused: false, remainingTime: 0 })
+    .then(() => { addLog("Kokain-Produktion gestartet", craftName); });
+    openRoute('timerTab');
 }
 
-function createKokainCraft() {
-    let item = document.getElementById("kokainSelect").value;
-    let amount = parseInt(document.getElementById("kokainAmount").value) || 1;
-    let data = kokainRezepte[item];
-    let durationMs = data.time * amount * 1000;
-    let craftName = (amount > 1 ? amount + "x " : "") + item;
+// --- METH LOGIK ---
+function loadMethRecipe() {
+    const inputs = document.getElementById("methInputs"); inputs.innerHTML = "";
+    let item = document.getElementById("methSelect").value;
+    let data = methRezepte[item];
+    if (!data) return;
+    for (let t in data.mats) {
+        inputs.innerHTML += `<div class="material">🧪 ${t}: <input id="meth_${t}" type="number" placeholder="Vorhanden..." oninput="checkMethCraft()"></div>`;
+    }
+    checkMethCraft();
+}
+function checkMethCraft() {
+    let item = document.getElementById("methSelect").value; let amount = parseInt(document.getElementById("methAmount").value) || 1;
+    let data = methRezepte[item]; let result = document.getElementById("methResult"); let startBtn = document.getElementById("methStartBtn");
+    if (!data) { result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+    let fehlend = [];
+    for (let t in data.mats) {
+        let need = data.mats[t] * amount; let have = parseInt(document.getElementById("meth_" + t)?.value) || 0;
+        if (have < need) fehlend.push(`${t} (${need - have})`);
+    }
+    if (fehlend.length === 0) { result.innerText = "✅ Materialien bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block"; } 
+    else { result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none"; }
+}
+function createMethCraft() {
+    let item = document.getElementById("methSelect").value; let amount = parseInt(document.getElementById("methAmount").value) || 1;
+    let data = methRezepte[item]; let durationMs = data.time * amount * 1000; let craftName = (amount > 1 ? amount + "x " : "") + item;
+    db.collection("crafts").add({ name: craftName, startedBy: currentUser, endTime: Date.now() + durationMs, totalDuration: durationMs, paused: false, remainingTime: 0 })
+    .then(() => { addLog("Meth-Produktion gestartet", craftName); });
+    openRoute('timerTab');
+}
 
-    db.collection("crafts").add({
-        name: craftName,
-        startedBy: currentUser,
-        endTime: Date.now() + durationMs,
-        totalDuration: durationMs,
-        paused: false,
-        remainingTime: 0 
-    }).then(() => {
-        addLog("Kokain-Produktion gestartet", craftName); 
-    });
+// --- ECSTASY LOGIK ---
+function loadEcstasyRecipe() {
+    const inputs = document.getElementById("ecstasyInputs"); inputs.innerHTML = "";
+    let item = document.getElementById("ecstasySelect").value;
+    let data = ecstasyRezepte[item];
+    if (!data) return;
+    for (let t in data.mats) {
+        inputs.innerHTML += `<div class="material">🧪 ${t}: <input id="ecstasy_${t}" type="number" placeholder="Vorhanden..." oninput="checkEcstasyCraft()"></div>`;
+    }
+    checkEcstasyCraft();
+}
+function checkEcstasyCraft() {
+    let item = document.getElementById("ecstasySelect").value; let amount = parseInt(document.getElementById("ecstasyAmount").value) || 1;
+    let data = ecstasyRezepte[item]; let result = document.getElementById("ecstasyResult"); let startBtn = document.getElementById("ecstasyStartBtn");
+    if (!data) { result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+    let fehlend = [];
+    for (let t in data.mats) {
+        let need = data.mats[t] * amount; let have = parseInt(document.getElementById("ecstasy_" + t)?.value) || 0;
+        if (have < need) fehlend.push(`${t} (${need - have})`);
+    }
+    if (fehlend.length === 0) { result.innerText = "✅ Materialien bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block"; } 
+    else { result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none"; }
+}
+function createEcstasyCraft() {
+    let item = document.getElementById("ecstasySelect").value; let amount = parseInt(document.getElementById("ecstasyAmount").value) || 1;
+    let data = ecstasyRezepte[item]; let durationMs = data.time * amount * 1000; let craftName = (amount > 1 ? amount + "x " : "") + item;
+    db.collection("crafts").add({ name: craftName, startedBy: currentUser, endTime: Date.now() + durationMs, totalDuration: durationMs, paused: false, remainingTime: 0 })
+    .then(() => { addLog("Ecstasy-Produktion gestartet", craftName); });
+    openRoute('timerTab');
+}
 
+// --- WESTEN LOGIK ---
+function loadWestenRecipe() {
+    const inputs = document.getElementById("westenInputs"); inputs.innerHTML = "";
+    let item = document.getElementById("westenSelect").value;
+    let data = westenRezepte[item];
+    if (!data) return;
+    for (let t in data.mats) {
+        let icon = (t === "Baumwolle") ? "🧵" : "🔲";
+        inputs.innerHTML += `<div class="material">${icon} ${t}: <input id="westen_${t}" type="number" placeholder="Vorhanden..." oninput="checkWestenCraft()"></div>`;
+    }
+    checkWestenCraft();
+}
+function checkWestenCraft() {
+    let item = document.getElementById("westenSelect").value; let amount = parseInt(document.getElementById("westenAmount").value) || 1;
+    let data = westenRezepte[item]; let result = document.getElementById("westenResult"); let startBtn = document.getElementById("westenStartBtn");
+    if (!data) { result.innerText = "Bitte Weste wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+    let fehlend = [];
+    for (let t in data.mats) {
+        let need = data.mats[t] * amount; let have = parseInt(document.getElementById("westen_" + t)?.value) || 0;
+        if (have < need) fehlend.push(`${t} (${need - have})`);
+    }
+    if (fehlend.length === 0) { result.innerText = "✅ Materialien bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block"; } 
+    else { result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none"; }
+}
+function createWestenCraft() {
+    let item = document.getElementById("westenSelect").value; let amount = parseInt(document.getElementById("westenAmount").value) || 1;
+    let data = westenRezepte[item]; let durationMs = data.time * amount * 1000; let craftName = item + (amount > 1 ? " x"+amount : "");
+    db.collection("crafts").add({ name: craftName, startedBy: currentUser, endTime: Date.now() + durationMs, totalDuration: durationMs, paused: false, remainingTime: 0 })
+    .then(() => { addLog("Westen-Manufaktur gestartet", craftName); });
+    openRoute('timerTab');
+}
+
+// --- MUNITION LOGIK ---
+function loadMunitionRecipe() {
+    const inputs = document.getElementById("munitionInputs"); inputs.innerHTML = "";
+    let item = document.getElementById("munitionSelect").value;
+    let data = munitionRezepte[item];
+    if (!data) return;
+    for (let t in data.mats) {
+        inputs.innerHTML += `<div class="material">💥 ${t}: <input id="munition_${t}" type="number" placeholder="Vorhanden..." oninput="checkMunitionCraft()"></div>`;
+    }
+    checkMunitionCraft();
+}
+function checkMunitionCraft() {
+    let item = document.getElementById("munitionSelect").value; let amount = parseInt(document.getElementById("munitionAmount").value) || 1;
+    let data = munitionRezepte[item]; let result = document.getElementById("munitionResult"); let startBtn = document.getElementById("munitionStartBtn");
+    if (!data) { result.innerText = "Bitte Magazin wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+    let fehlend = [];
+    for (let t in data.mats) {
+        let need = data.mats[t] * amount; let have = parseInt(document.getElementById("munition_" + t)?.value) || 0;
+        if (have < need) fehlend.push(`${t} (${need - have})`);
+    }
+    if (fehlend.length === 0) { result.innerText = "✅ Materialien bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block"; } 
+    else { result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#ffb7c5"; startBtn.style.display = "none"; }
+}
+function createMunitionCraft() {
+    let item = document.getElementById("munitionSelect").value; let amount = parseInt(document.getElementById("munitionAmount").value) || 1;
+    let data = munitionRezepte[item]; let durationMs = data.time * amount * 1000; let craftName = item + (amount > 1 ? " x"+amount : "");
+    db.collection("crafts").add({ name: craftName, startedBy: currentUser, endTime: Date.now() + durationMs, totalDuration: durationMs, paused: false, remainingTime: 0 })
+    .then(() => { addLog("Munitions-Fabrik gestartet", craftName); });
     openRoute('timerTab');
 }
 
