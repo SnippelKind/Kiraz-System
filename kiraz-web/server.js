@@ -5,6 +5,11 @@ const axios = require('axios');
 const path = require('path');
 
 const app = express();
+// Verhindert, dass alte Versionen im Browser gespeichert werden
+app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    next();
+});
 const PORT = process.env.PORT || 3000;
 
 // Fraktions IDs
