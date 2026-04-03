@@ -11,6 +11,9 @@ const PORT = process.env.PORT || 3000;
 const REQUIRED_GUILD_ID = '1483733301737951323';
 const REQUIRED_ROLE_ID = '1483760063687426170';
 
+// NEU: Admin Rollen (die löschen dürfen)
+const ADMIN_ROLES = ['1484284804143906956', '1483760533197951099'];
+
 // Session Setup
 app.use(session({
     secret: process.env.SESSION_SECRET || 'geheimes-kiraz-passwort-123',
@@ -65,14 +68,20 @@ app.get('/callback', async (req, res) => {
 
         const roles = memberResponse.data.roles; // Array aller Rollen-IDs des Users
         
-        // --- NEU: Den Discord-Namen auslesen ---
+        // Den Discord-Namen auslesen
         const discordUser = memberResponse.data.user;
         const displayName = discordUser.global_name || discordUser.username;
 
-        // Prüfe ob die Rolle dabei ist
+        // Prüfe ob die Basis-Rolle dabei ist, um überhaupt aufs Dashboard zu kommen
         if (roles.includes(REQUIRED_ROLE_ID)) {
+            
+            // NEU: Prüfen, ob der User eine der Admin-Rollen hat
+            const isAdmin = roles.some(role => ADMIN_ROLES.includes(role));
+
             req.session.isAuthorized = true; // Türsteher sagt JA
             req.session.username = displayName; // Speichert den Namen in der Session
+            req.session.isAdmin = isAdmin; // Speichert, ob der User Admin ist
+
             res.redirect('/dashboard');
         } else {
             res.status(403).send('<h1>Zugriff verweigert</h1><p>Du bist zwar auf dem Server, hast aber nicht die benötigte Rolle.</p>');
@@ -84,10 +93,13 @@ app.get('/callback', async (req, res) => {
     }
 });
 
-// --- NEU: Kleine API, damit das Dashboard den Namen abfragen kann ---
+// --- NEU: Kleine API, damit das Dashboard den Namen UND Admin-Status abfragen kann ---
 app.get('/api/user', (req, res) => {
     if (req.session.isAuthorized && req.session.username) {
-        res.json({ username: req.session.username });
+        res.json({ 
+            username: req.session.username,
+            isAdmin: req.session.isAdmin || false // Schickt mit, ob Admin
+        });
     } else {
         res.status(401).json({ error: "Nicht eingeloggt" });
     }
