@@ -312,7 +312,8 @@
             <img src="/public/ECSTASY%20ROUTE.png" alt="Ecstasy" onerror="this.style.opacity='0'">
             <div class="route-title">Ecstasy</div>
         </div>
-        <div class="route-card" onclick="alert('Geldwäsche folgt...')">
+        <!-- NEU: Geldwäsche Route angebunden -->
+        <div class="route-card" onclick="openRoute('geldwaescheTab')">
             <div class="fallback-icon">💵</div>
             <img src="/public/GELDWASCHE.png" alt="Geldwäsche" onerror="this.style.opacity='0'">
             <div class="route-title">Geldwäsche</div>
@@ -504,6 +505,27 @@
     </div>
 </div>
 
+<!-- NEU: Geldwäsche Tab -->
+<div id="geldwaescheTab" style="display:none;">
+    <div class="box">
+        <h2 style="color:#ffb7c5">💵 Geldwäsche</h2>
+        <p style="color:#ccc; font-size: 0.9em;">Wähle die Waschzeit. Je länger gewaschen wird, desto mehr reines Grüngeld erhältst du zurück.</p>
+        <input type="number" id="schwarzgeldAmount" placeholder="Schwarzgeld Menge..." min="1" oninput="checkGeldwaesche();">
+        
+        <select id="geldwaescheHours" onchange="checkGeldwaesche()">
+            <option value="1">1 Stunde (60% Verlust = 40% Grüngeld)</option>
+            <option value="2">2 Stunden (50% Verlust = 50% Grüngeld)</option>
+            <option value="3">3 Stunden (40% Verlust = 60% Grüngeld)</option>
+            <option value="4">4 Stunden (30% Verlust = 70% Grüngeld)</option>
+            <option value="5">5 Stunden (20% Verlust = 80% Grüngeld)</option>
+            <option value="6">6 Stunden (10% Verlust = 90% Grüngeld)</option>
+        </select>
+        
+        <p id="geldwaescheResult" class="result">Bitte Betrag eingeben</p>
+        <button id="geldwaescheStartBtn" class="btn-action" onclick="createGeldwaesche()" style="display:none;">▶ Waschvorgang starten</button>
+    </div>
+</div>
+
 <div id="timerTab" style="display:none;">
     <div class="box">
         <h2 style="color:#77dd77">⏱ Aktive Produktion</h2>
@@ -649,7 +671,6 @@ const kokainRezepte = {
     "Kokain": { mats: { "Benzin": 1, "Methanol": 2, "Kokain Blätter": 3 }, time: 4 }
 };
 
-// NEU: Meth, Ecstasy, Westen, Munition Rezepte
 const methRezepte = {
     "Meth": { mats: { "Natronlauge": 1, "Lithiumfolie": 2, "Ammoniumnitrat": 3 }, time: 4 }
 };
@@ -660,7 +681,7 @@ const ecstasyRezepte = {
 
 const westenRezepte = {
     "Leichte Weste": { mats: { "Baumwolle": 10, "Polyethylenplatten": 10 }, time: 45 },
-    "Schwere Weste": { mats: { "Baumwolle": 50, "Polyethylenplatten": 50 }, time: 225 } // 3m 45s
+    "Schwere Weste": { mats: { "Baumwolle": 50, "Polyethylenplatten": 50 }, time: 225 } 
 };
 
 const munitionRezepte = {
@@ -677,6 +698,7 @@ function showDashboard() {
     document.getElementById('ecstasyTab').style.display = "none";
     document.getElementById('westenTab').style.display = "none";
     document.getElementById('munitionTab').style.display = "none";
+    document.getElementById('geldwaescheTab').style.display = "none"; // Versteckt Geldwäsche Tab
     document.getElementById('timerTab').style.display = "none";
     document.getElementById('smeltTab').style.display = "none";
     document.getElementById('mapTab').style.display = "none";
@@ -920,6 +942,52 @@ function createMunitionCraft() {
     let data = munitionRezepte[item]; let durationMs = data.time * amount * 1000; let craftName = item + (amount > 1 ? " x"+amount : "");
     db.collection("crafts").add({ name: craftName, startedBy: currentUser, endTime: Date.now() + durationMs, totalDuration: durationMs, paused: false, remainingTime: 0 })
     .then(() => { addLog("Munitions-Fabrik gestartet", craftName); });
+    openRoute('timerTab');
+}
+
+// --- NEU: GELDWÄSCHE LOGIK ---
+function checkGeldwaesche() {
+    let amount = parseInt(document.getElementById("schwarzgeldAmount").value) || 0;
+    let hours = parseInt(document.getElementById("geldwaescheHours").value) || 1;
+    let result = document.getElementById("geldwaescheResult");
+    let startBtn = document.getElementById("geldwaescheStartBtn");
+
+    if (amount <= 0) {
+        result.innerText = "Bitte Betrag eingeben.";
+        result.style.color = "white";
+        startBtn.style.display = "none";
+        return;
+    }
+
+    let lossMap = { 1: 60, 2: 50, 3: 40, 4: 30, 5: 20, 6: 10 };
+    let lossPercent = lossMap[hours];
+    let keepPercent = 100 - lossPercent;
+    let cleanMoney = Math.floor(amount * (keepPercent / 100));
+
+    result.innerHTML = `Erwartetes Grüngeld: <span style="color:#77dd77; font-size:1.2em;">$${cleanMoney.toLocaleString('de-DE')}</span> (Dauer: ${hours} Std)`;
+    startBtn.style.display = "block";
+}
+function createGeldwaesche() {
+    let amount = parseInt(document.getElementById("schwarzgeldAmount").value) || 0;
+    let hours = parseInt(document.getElementById("geldwaescheHours").value) || 1;
+    
+    let lossMap = { 1: 60, 2: 50, 3: 40, 4: 30, 5: 20, 6: 10 };
+    let cleanMoney = Math.floor(amount * ((100 - lossMap[hours]) / 100));
+    
+    let durationMs = hours * 3600 * 1000; // Stunden in Millisekunden
+    let craftName = `Geldwäsche ($${amount.toLocaleString('de-DE')} ➔ $${cleanMoney.toLocaleString('de-DE')})`;
+
+    db.collection("crafts").add({
+        name: craftName,
+        startedBy: currentUser,
+        endTime: Date.now() + durationMs,
+        totalDuration: durationMs,
+        paused: false,
+        remainingTime: 0 
+    }).then(() => {
+        addLog("Geldwäsche gestartet", `Wäscht $${amount.toLocaleString('de-DE')} für ${hours} Stunde(n)`); 
+    });
+
     openRoute('timerTab');
 }
 
