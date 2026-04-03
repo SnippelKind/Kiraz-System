@@ -46,6 +46,23 @@
         padding: 20px;
     }
 
+    .user-profile {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(20, 20, 35, 0.95);
+        border: 1px solid #ffb7c5;
+        padding: 10px 20px;
+        border-radius: 12px;
+        color: white;
+        font-weight: bold;
+        z-index: 1000;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
     .route-card {
         background: linear-gradient(145deg, #2a2a40, #1e1e2f);
         border-radius: 20px;
@@ -298,6 +315,10 @@
             <img src="https://images.unsplash.com/photo-1553949345-eb786bb3f7ba?auto=format&fit=crop&w=400" alt="Markt" onerror="this.style.opacity='0'">
             <div class="route-title">Schwarzmarkt</div>
         </div>
+    </div>
+
+    <div id="userProfile" class="user-profile" style="display: none;">
+        👤 <span id="userNameDisplay">Lädt...</span>
     </div>
 
     <div class="tabs">
