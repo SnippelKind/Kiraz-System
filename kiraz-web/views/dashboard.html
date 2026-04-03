@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>KIRAZ Crafting System v2.9 - Log Update</title>
+<title>KIRAZ ROUTEN NETZWERK</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
@@ -247,7 +247,6 @@
         width: 100%; height: 100%; object-fit: cover; 
     }
 
-    /* NEU: Log-Eintrag Style */
     .log-entry {
         border-bottom: 1px solid #3e3e5e;
         padding: 10px 0;
@@ -328,12 +327,23 @@
     <div class="tabs">
         <button onclick="openRoute('timerTab')">⏱ Alle Timer</button>
         <button onclick="openRoute('smeltTab')">🔥 Schmelzofen</button>
-        <!-- NEU: Protokoll Button -->
         <button onclick="openRoute('logTab')">📜 Protokoll</button>
+        <!-- NEU: Online Button -->
+        <button id="onlineCountBtn" onclick="openRoute('onlineTab')">👥 Online (0)</button>
     </div>
 </div>
 
-<!-- NEU: Protokoll Tab -->
+<!-- NEU: Online Tab -->
+<div id="onlineTab" style="display:none;">
+    <div class="box">
+        <h2 style="color:#77dd77">🟢 Aktuell auf dem Dashboard</h2>
+        <p style="color:#ccc; font-size: 0.9em;">Zeigt alle Fraktionsmitglieder, die das Webpanel gerade geöffnet haben.</p>
+        <div id="onlineList" style="text-align: left; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 15px; border: 1px solid #3e3e5e; min-height: 100px;">
+            Lädt...
+        </div>
+    </div>
+</div>
+
 <div id="logTab" style="display:none;">
     <div class="box box-large">
         <h2 style="color:#ffb7c5">📜 System Protokoll</h2>
@@ -428,7 +438,6 @@
 <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
 
 <script>
-// --- FIREBASE INITIALISIERUNG ---
 const firebaseConfig = {
   apiKey: "AIzaSyDO4axgbMlOp_WFtPZuahNh_glJZXbSBZQ",
   authDomain: "kiraz-software.firebaseapp.com",
@@ -444,17 +453,58 @@ const db = firebase.firestore();
 let currentUser = "Unbekannt"; 
 let isUserAdmin = false; 
 
-// --- NEU: LOG FUNKTION ---
+// --- NEU: ONLINE HEARTBEAT ---
+function updateOnlineStatus() {
+    if(currentUser !== "Unbekannt") {
+        db.collection("online").doc(currentUser).set({
+            username: currentUser,
+            lastActive: Date.now()
+        }).catch(err => console.log("Fehler beim Online-Status: ", err));
+    }
+}
+// Sendet alle 10 Sekunden ein Lebenszeichen an Firebase
+setInterval(updateOnlineStatus, 10000);
+
+// Lauscht auf alle User, die "Online" sind
+db.collection("online").onSnapshot((snapshot) => {
+    const list = document.getElementById("onlineList");
+    const countBtn = document.getElementById("onlineCountBtn");
+    if(!list || !countBtn) return;
+
+    let now = Date.now();
+    let onlineHtml = "";
+    let count = 0;
+
+    snapshot.forEach(doc => {
+        let data = doc.data();
+        // Wenn das letzte Lebenszeichen weniger als 30 Sekunden her ist:
+        if (now - data.lastActive < 30000) {
+            onlineHtml += `<div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1.1em;">
+                            🟢 <span style="color: #fff; font-weight: bold; margin-left: 10px;">${data.username}</span>
+                           </div>`;
+            count++;
+        }
+    });
+
+    if(count === 0) {
+        list.innerHTML = "<p style='color:#aaa; text-align:center; margin-top:20px;'>Gerade ist niemand online.</p>";
+    } else {
+        list.innerHTML = onlineHtml;
+    }
+    
+    countBtn.innerText = `👥 Online (${count})`;
+});
+
+// --- LOG FUNKTION ---
 function addLog(action, details) {
     db.collection("logs").add({
         user: currentUser,
         action: action,
         details: details,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp() // Google Server Zeit
+        timestamp: firebase.firestore.FieldValue.serverTimestamp() 
     }).catch(err => console.error("Fehler beim Loggen: ", err));
 }
 
-// Live-Listener für die Logs
 db.collection("logs").orderBy("timestamp", "desc").limit(50).onSnapshot((querySnapshot) => {
     const logList = document.getElementById("logList");
     if(!logList) return;
@@ -505,6 +555,7 @@ function showDashboard() {
     document.getElementById('smeltTab').style.display = "none";
     document.getElementById('mapTab').style.display = "none";
     document.getElementById('logTab').style.display = "none";
+    document.getElementById('onlineTab').style.display = "none"; // Versteckt den Online Tab
     document.getElementById('backBtn').style.display = "none";
 }
 
@@ -564,7 +615,7 @@ function createCraft() {
         paused: false,
         remainingTime: 0 
     }).then(() => {
-        addLog("Herstellung gestartet", craftName); // LOG
+        addLog("Herstellung gestartet", craftName); 
     });
 
     openRoute('timerTab');
@@ -577,13 +628,13 @@ function togglePause(id) {
         db.collection("crafts").doc(id).update({
             paused: false,
             endTime: Date.now() + c.remainingTime
-        }).then(() => addLog("Herstellung fortgesetzt", c.name)); // LOG
+        }).then(() => addLog("Herstellung fortgesetzt", c.name)); 
     } else {
         let leftMs = c.endTime - Date.now();
         db.collection("crafts").doc(id).update({
             paused: true,
             remainingTime: leftMs
-        }).then(() => addLog("Herstellung pausiert", c.name)); // LOG
+        }).then(() => addLog("Herstellung pausiert", c.name)); 
     }
 }
 
@@ -591,7 +642,7 @@ function cancelCraft(id) {
     let c = crafts.find(x => x.id === id);
     if(confirm("Möchtest du diesen Vorgang wirklich abbrechen?")) {
         db.collection("crafts").doc(id).delete().then(() => {
-            if(c) addLog("Herstellung abgebrochen", c.name); // LOG
+            if(c) addLog("Herstellung abgebrochen", c.name); 
         });
     }
 }
@@ -713,7 +764,7 @@ function addMapMarker(e) {
         name: routeName.trim(),
         fotoUrl: routeFotoUrl ? routeFotoUrl.trim() : "" 
     }).then(() => {
-        addLog("GPS Punkt erstellt", routeName.trim()); // LOG
+        addLog("GPS Punkt erstellt", routeName.trim()); 
     }).catch((error) => console.error("Fehler beim Speichern in Firebase:", error));
 }
 
@@ -771,7 +822,7 @@ function editCurrentMarker() {
             name: newName.trim(),
             fotoUrl: newFotoUrl.trim()
         }).then(() => {
-            addLog("GPS Punkt bearbeitet", `Von '${m.name}' zu '${newName.trim()}'`); // LOG
+            addLog("GPS Punkt bearbeitet", `Von '${m.name}' zu '${newName.trim()}'`); 
             closeMarkerModal(); 
         }).catch((error) => console.error("Fehler beim Bearbeiten:", error));
     }
@@ -784,7 +835,7 @@ function deleteCurrentMarker() {
             const markerId = mapMarkers[currentSelectedMarkerIndex].id;
             db.collection("markers").doc(markerId).delete()
             .then(() => { 
-                addLog("GPS Punkt gelöscht", markerName); // LOG
+                addLog("GPS Punkt gelöscht", markerName); 
                 closeMarkerModal(); 
             })
             .catch((error) => console.error("Fehler beim Löschen:", error));
@@ -798,7 +849,7 @@ function clearAllMarkers() {
         mapMarkers.forEach(m => {
             db.collection("markers").doc(m.id).delete();
         });
-        addLog("Alle GPS Punkte gelöscht", "Gesamte Karte geleert"); // LOG
+        addLog("Alle GPS Punkte gelöscht", "Gesamte Karte geleert"); 
     }
 }
 
@@ -811,6 +862,9 @@ fetch('/api/user')
             
             document.getElementById('userNameDisplay').innerText = data.username;
             document.getElementById('userProfile').style.display = "flex";
+            
+            // Sofort einmal den Online-Status pushen, wenn der Name geladen ist
+            updateOnlineStatus();
             
             if(data.isAdmin) {
                 isUserAdmin = true; 
