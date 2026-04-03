@@ -2,9 +2,8 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>KIRAZ ROUTEN NETZWERK</title>
+<title>KIRAZ Routen NETZWERK</title>
 
-<!-- NEU: Firebase Bibliotheken einbinden -->
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
 
@@ -203,21 +202,14 @@
         pointer-events: none;
     }
 
-.marker {
-    position: absolute;
-    width: 22px;
-    height: 22px;
-    background: #ffb7c5;
-    border: 2px solid #fff;
-    border-radius: 50%;
-    /* WICHTIG: Das hier sorgt dafür, dass die MITTE des Punktes auf den Koordinaten liegt */
-    transform: translate(-50%, -50%); 
-    box-shadow: 0 0 10px rgba(0,0,0,0.8);
-    cursor: pointer;
-    z-index: 10;
-    transition: transform 0.2s;
-    pointer-events: auto;
-}
+    .marker {
+        position: absolute; width: 22px; height: 22px;
+        background: #ffb7c5; border: 2px solid #fff; border-radius: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        cursor: pointer; z-index: 10; transition: transform 0.2s;
+        pointer-events: auto;
+    }
     .marker:hover { transform: translate(-50%, -50%) scale(1.3); background: #ff6b6b; }
 
     .marker-label {
@@ -244,18 +236,13 @@
     .minimap-container {
         width: 100%; height: 250px; border: 2px solid #ffb7c5; 
         border-radius: 10px; overflow: hidden; position: relative; 
-        margin-top: 15px; background: #000;
+        margin-top: 15px; background: #1a1a2e; /* Hintergrund für leere Bilder */
+        display: flex; justify-content: center; align-items: center; color: #666; font-weight: bold;
     }
 
-    #miniMapZoom {
-        width: 100%; height: 100%; background-image: url('/public/gta5-map.png');
-        background-repeat: no-repeat; background-size: 400% auto; 
-    }
-
-    .minimap-container::after {
-        content: '+'; position: absolute; top: 50%; left: 50%; 
-        transform: translate(-50%, -50%); color: #ff6b6b; font-size: 2.5em; 
-        font-weight: bold; text-shadow: 0 0 5px black; pointer-events: none;
+    /* NEU: Zoom Foto im Modal */
+    #miniMapZoomFoto {
+        width: 100%; height: 100%; object-fit: cover; /* Bild füllt den Container ohne Verzerrung */
     }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
@@ -269,7 +256,6 @@
 
 <button id="backBtn" class="btn-home" onclick="showDashboard()" style="display:none;">⬅ Home</button>
 
-<!-- DASHBOARD -->
 <div id="mainDashboard">
     <h1>KIRAZ SYSTEM</h1>
     <div class="subtitle">Wähle eine Route aus</div>
@@ -333,11 +319,10 @@
     </div>
 </div>
 
-<!-- MAP SECTION -->
 <div id="mapTab" style="display:none;">
     <div class="box box-large">
-        <h2 style="color:#ffb7c5">📍 Interaktive Routen Karte</h2>
-        <p style="color:#ccc;">Klicke auf die Karte, um einen Punkt zu setzen. Klicke in der Legende oder auf der Karte auf einen Punkt für Details.</p>
+        <h2 style="color:#ffb7c5">📍 Interaktive Routen Karte - GPS Foto Upgrade</h2>
+        <p style="color:#ccc;">Klicke auf die Karte, um einen Punkt zu setzen. Füge im GPS-Namen eine Foto-URL ein, um den Zoom anzuzeigen.</p>
         
         <div class="map-layout">
             <div class="legend-container">
@@ -356,22 +341,21 @@
     </div>
 </div>
 
-<!-- MARKER DETAILS MODAL -->
 <div id="markerModal" class="modal-overlay" style="display:none;">
     <div class="box modal-box">
         <span class="close-btn" onclick="closeMarkerModal()">✖</span>
         <h2 id="modalMarkerName" style="color:#ffb7c5; margin-top: 0;">Routen-Punkt</h2>
-        <p style="color:#aaa; font-size:0.9em;">Genaue Position (Zoom-Ansicht)</p>
+        <p style="color:#aaa; font-size:0.9em;">GPS Zoom-Ansicht (Echtes Foto)</p>
         
-        <div class="minimap-container">
-            <div id="miniMapZoom"></div>
+        <div class="minimap-container" id="minimapContainer">
+            <img id="miniMapZoomFoto" src="" alt="GPS Foto fehlt">
+            <span id="miniMapMissingText" style="display:none;">Kein Foto hinterlegt</span>
         </div>
         
         <button id="deleteSingleBtn" class="btn-danger" style="width:100%; border-radius:10px; padding:15px; font-weight:bold; border:none; cursor:pointer; display:none;" onclick="deleteCurrentMarker()">🗑 Diesen Punkt löschen</button>
     </div>
 </div>
 
-<!-- CRAFTING SECTION -->
 <div id="craftTab" style="display:none;">
     <div class="box">
         <h2 style="color:#ffb7c5">🛠 Waffen Fabrik</h2>
@@ -391,7 +375,6 @@
     </div>
 </div>
 
-<!-- TIMER SECTION -->
 <div id="timerTab" style="display:none;">
     <div class="box">
         <h2 style="color:#77dd77">⏱ Aktive Produktion</h2>
@@ -399,7 +382,6 @@
     </div>
 </div>
 
-<!-- SMELTING SECTION -->
 <div id="smeltTab" style="display:none;">
     <div class="box">
         <h2 style="color:#ffcc00">🔥 Schmelzofen</h2>
@@ -430,17 +412,16 @@ const firebaseConfig = {
   appId: "1:1043597215258:web:6d91bcbb42ec2918ba33a3"
 };
 
-// Startet Firebase und die Datenbank (Firestore)
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// NEU: Variable für den eingeloggten User
+// Variable für den eingeloggten User
 let currentUser = "Unbekannt"; 
+let mapMarkers = []; 
 
 // --- FIREBASE TIMER LOGIK ---
 let crafts = [];
 
-// Live-Listener für Timer: Updatet sich bei allen, wenn jemand was startet, pausiert oder löscht
 db.collection("crafts").onSnapshot((querySnapshot) => {
     crafts = [];
     querySnapshot.forEach((doc) => {
@@ -448,8 +429,6 @@ db.collection("crafts").onSnapshot((querySnapshot) => {
     });
     render(); 
 });
-
-let mapMarkers = []; 
 
 const rezepte = {
     "SNS Pistole": { mats: { "Waffenrahmen": 15, "Schlagbolzen": 25, "Riegel": 35 }, time: 1320 },
@@ -516,10 +495,9 @@ function createCraft() {
     let data = rezepte[item];
     let durationMs = data.time * amount * 1000;
 
-    // Timer direkt in Firebase speichern (inkl. Namen!)
     db.collection("crafts").add({
         name: item + (amount > 1 ? " x"+amount : ""),
-        startedBy: currentUser, // NEU: Speichert den Namen des Spielers in die Datenbank
+        startedBy: currentUser,
         endTime: Date.now() + durationMs,
         totalDuration: durationMs,
         paused: false,
@@ -558,12 +536,7 @@ function tick() {
         if (!c.paused && now >= c.endTime) {
             let sound = document.getElementById("sound");
             if(sound) sound.play().catch(e => console.log("Sound geblockt"));
-            
-            // WICHTIG: Nur derjenige, der den Timer gestartet hat, darf ihn automatisch löschen!
-            // Das verhindert, dass Spieler mit falschen PC-Uhrzeiten die Timer für alle killen.
-            if (c.startedBy === currentUser) {
-                db.collection("crafts").doc(c.id).delete();
-            }
+            db.collection("crafts").doc(c.id).delete();
         }
     });
     render(); 
@@ -579,7 +552,6 @@ function render() {
         let remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
         let percent = Math.min(100, Math.max(0, 100 - (remainingMs / c.totalDuration * 100)));
         
-        // NEU: Baut den Namen zusammen (wenn einer vorhanden ist)
         let startedByText = c.startedBy ? `<span style="color:#aaa; font-size:0.85em; margin-left:8px; font-weight:normal;">(Gestartet von: ${c.startedBy})</span>` : "";
 
         list.innerHTML += `
@@ -604,7 +576,7 @@ if(oreInput) oreInput.addEventListener("input", (e) => { document.getElementById
 let metalInput = document.getElementById("metalInput");
 if(metalInput) metalInput.addEventListener("input", (e) => { document.getElementById("frameOutput").innerText = "Ertrag: " + Math.floor((parseInt(e.target.value) || 0) / 7) + " Rahmen"; });
 
-// --- FIREBASE MAP LOGIK ---
+// --- FIREBASE MAP LOGIK (Foto Upgrade) ---
 let currentSelectedMarkerIndex = null;
 
 db.collection("markers").onSnapshot((querySnapshot) => {
@@ -614,7 +586,8 @@ db.collection("markers").onSnapshot((querySnapshot) => {
             id: doc.id,         
             x: doc.data().x,
             y: doc.data().y,
-            name: doc.data().name
+            name: doc.data().name,
+            fotoUrl: doc.data().fotoUrl || "" // NEU: Holt die Foto-URL aus der Datenbank
         });
     });
     renderMapMarkers();
@@ -646,33 +619,29 @@ function renderMapMarkers() {
 }
 
 function addMapMarker(e) {
-    // Wir ignorieren den Klick, wenn man direkt auf ein Label oder einen vorhandenen Marker klickt
     if(e.target.classList.contains('marker') || e.target.classList.contains('marker-label')) return;
 
     const mapImg = document.getElementById("gtaMapImage");
     const rect = mapImg.getBoundingClientRect();
 
-    // EXAKTE BERECHNUNG:
-    // e.clientX/Y ist die Position der Maus auf dem Bildschirm.
-    // rect.left/top ist die Position des Bildes auf dem Bildschirm.
-    // Wir ziehen das voneinander ab und teilen es durch die aktuelle Breite/Höhe des Bildes.
-    // So erhalten wir immer einen Wert zwischen 0 und 100 (Prozent), egal ob gescrollt wurde!
     let x = ((e.clientX - rect.left) / rect.width) * 100;
     let y = ((e.clientY - rect.top) / rect.height) * 100;
 
-    // Sicherheits-Check: Falls man knapp neben das Bild klickt
     if (x < 0 || x > 100 || y < 0 || y > 100) return;
 
-    let routeName = prompt("Welche Route / Welcher Punkt befindet sich hier? (z.B. Waffen, Meth)");
+    // FOTO UPGRADE: Prompt nach Name UND Foto-URL
+    let routeName = prompt("GPS NAME (z.B. Waffen Fabrik A):");
+    if(!routeName || routeName.trim() === "") return; // Abbrech-Schutz
+
+    let routeFotoUrl = prompt("GPS FOTO-URL (Imgur, Discord-Link etc.) - Optional:");
     
-    if (routeName && routeName.trim() !== "") {
-        // Speichern in Firebase
-        db.collection("markers").add({
-            x: x,
-            y: y,
-            name: routeName
-        }).catch((error) => console.error("Fehler beim Speichern in Firebase:", error));
-    }
+    // Punkt in Firebase speichern (inkl. fotoUrl)
+    db.collection("markers").add({
+        x: x,
+        y: y,
+        name: routeName.trim(),
+        fotoUrl: routeFotoUrl ? routeFotoUrl.trim() : "" // Speichert leeren String, falls kein Foto
+    }).catch((error) => console.error("Fehler beim Speichern in Firebase:", error));
 }
 
 function focusMarker(index) {
@@ -694,8 +663,19 @@ function openMarkerModal(e, index) {
     
     document.getElementById("modalMarkerName").innerText = marker.name;
     
-    const minimap = document.getElementById("miniMapZoom");
-    minimap.style.backgroundPosition = `${marker.x}% ${marker.y}%`;
+    // FOTO UPGRADE: Bild im Modal anzeigen
+    const foto = document.getElementById("miniMapZoomFoto");
+    const missingText = document.getElementById("miniMapMissingText");
+    
+    if(marker.fotoUrl && marker.fotoUrl !== "") {
+        foto.src = marker.fotoUrl;
+        foto.style.display = "block";
+        missingText.style.display = "none";
+    } else {
+        foto.src = ""; // Quelle leeren
+        foto.style.display = "none";
+        missingText.style.display = "block";
+    }
     
     document.getElementById("markerModal").style.display = "flex";
 }
@@ -707,7 +687,7 @@ function closeMarkerModal() {
 
 function deleteCurrentMarker() {
     if(currentSelectedMarkerIndex !== null) {
-        if(confirm("Möchtest du diesen Punkt wirklich entfernen?")) {
+        if(confirm("Möchtest du diesen GPS-Punkt wirklich entfernen?")) {
             const markerId = mapMarkers[currentSelectedMarkerIndex].id;
             db.collection("markers").doc(markerId).delete()
             .then(() => { closeMarkerModal(); })
@@ -718,7 +698,7 @@ function deleteCurrentMarker() {
 
 function clearAllMarkers() {
     if(mapMarkers.length === 0) return;
-    if(confirm("Sollen WIRKLICH ALLE Marker gelöscht werden?")) {
+    if(confirm("Sollen WIRKLICH ALLE GPS-Marker gelöscht werden?")) {
         mapMarkers.forEach(m => {
             db.collection("markers").doc(m.id).delete();
         });
@@ -730,7 +710,7 @@ fetch('/api/user')
     .then(response => response.json())
     .then(data => {
         if(data.username) {
-            currentUser = data.username; // NEU: Speichert den Namen global ab für den Timer!
+            currentUser = data.username; 
             
             document.getElementById('userNameDisplay').innerText = data.username;
             document.getElementById('userProfile').style.display = "flex";
@@ -743,5 +723,3 @@ fetch('/api/user')
     })
     .catch(error => console.log("Fehler beim Laden des Users:", error));
 </script>
-</body>
-</html>
