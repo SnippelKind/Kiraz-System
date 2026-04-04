@@ -642,6 +642,31 @@
 <div id="timerTab" style="display:none;">
     <div class="box box-large">
         <h2 style="color:#77dd77">⏱ Aktive Produktionen</h2>
+        
+        <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 25px; flex-wrap: wrap;">
+            <div style="text-align: left;">
+                <label style="font-size: 0.8em; color: #aaa; display: block; margin-bottom: 5px;">Nutzer-Filter:</label>
+                <select id="filterUser" onchange="render()" style="margin: 0; padding: 10px; width: 200px;">
+                    <option value="all">Alle Mitglieder</option>
+                    <option value="me">Nur meine</option>
+                </select>
+            </div>
+            <div style="text-align: left;">
+                <label style="font-size: 0.8em; color: #aaa; display: block; margin-bottom: 5px;">Routen-Filter:</label>
+                <select id="filterRoute" onchange="render()" style="margin: 0; padding: 10px; width: 200px;">
+                    <option value="all">Alle Routen</option>
+                    <option value="Waffen">Waffen</option>
+                    <option value="Ephi">Ephi</option>
+                    <option value="Kokain">Kokain</option>
+                    <option value="Meth">Meth</option>
+                    <option value="Ecstasy">Ecstasy</option>
+                    <option value="Westen">Westen</option>
+                    <option value="Munition">Munition</option>
+                    <option value="Geldwäsche">Geldwäsche</option>
+                </select>
+            </div>
+        </div>
+
         <p style="color:#ccc; font-size: 0.9em;">Alle laufenden Prozesse der Fraktion in der Übersicht.</p>
         <div id="craftList" style="max-height: 700px; overflow-y: auto; padding-right: 10px;"></div>
     </div>
@@ -1161,21 +1186,47 @@ function tick() {
 }
 
 function render() {
-    let list = document.getElementById("craftList"); if (!list) return;
-    list.innerHTML = ""; let now = Date.now();
+    let list = document.getElementById("craftList"); 
+    if (!list) return;
+    
+    list.innerHTML = ""; 
+    let now = Date.now();
+    
+    // Filter-Werte abrufen
+    let userFilter = document.getElementById("filterUser").value;
+    let routeFilter = document.getElementById("filterRoute").value;
     
     if(crafts.length === 0) { 
         list.innerHTML = "<p style='color:#aaa; text-align:center; padding: 20px;'>Aktuell laufen keine Produktionen.</p>"; 
         return; 
     }
     
-    let sortedCrafts = [...crafts].sort((a, b) => {
+    // 1. Sortieren nach Endzeit
+    let displayCrafts = [...crafts].sort((a, b) => {
         let aTime = a.paused ? (now + a.remainingTime) : a.endTime;
         let bTime = b.paused ? (now + b.remainingTime) : b.endTime;
         return aTime - bTime;
     });
 
-    sortedCrafts.forEach(c => {
+    // 2. Filtern nach Benutzer
+    if (userFilter === "me") {
+        displayCrafts = displayCrafts.filter(c => c.startedBy === currentUser);
+    }
+
+    // 3. Filtern nach Route
+    if (routeFilter !== "all") {
+        displayCrafts = displayCrafts.filter(c => {
+            // Prüft, ob der Name des Crafts das Wort aus dem Filter enthält (z.B. "Ephi")
+            return c.name.toLowerCase().includes(routeFilter.toLowerCase());
+        });
+    }
+
+    if(displayCrafts.length === 0) {
+        list.innerHTML = "<p style='color:#aaa; text-align:center; padding: 20px;'>Keine Produktionen für diese Filter gefunden.</p>";
+        return;
+    }
+
+    displayCrafts.forEach(c => {
         let remainingMs = c.paused ? c.remainingTime : (c.endTime - now);
         let remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
         let percent = Math.min(100, Math.max(0, 100 - (remainingMs / c.totalDuration * 100)));
