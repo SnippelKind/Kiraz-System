@@ -437,12 +437,22 @@
         </div>
     </div>
 
-    <div class="tabs">
-        <button onclick="openRoute('timerTab')">⏱ Alle Timer</button>
-        <button onclick="openRoute('smeltTab')">🔥 Schmelzofen</button>
-        <!-- NEU: Log Button ist standardmäßig unsichtbar -->
-        <button id="logBtn" onclick="openRoute('logTab')" style="display:none;">📜 Protokoll</button>
-        <button id="onlineCountBtn" onclick="openRoute('onlineTab')">👥 Online (0)</button>
+<!-- Suche diesen Bereich in dashboard.html -->
+<div id="timerTab" style="display:none;">
+    <div class="box box-large">
+        <h2 style="color:#77dd77">⏱ Aktive Produktionen</h2>
+        
+        <!-- NEU: Filter Bereich -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center;">
+            <select id="filterType" onchange="render()" style="width: auto; min-width: 200px;">
+                <option value="all">Alle Produktionen</option>
+                <option value="mine">Nur meine Verarbeitung</option>
+            </select>
+            <input type="text" id="filterRoute" placeholder="Nach Route suchen (z.B. Waffen)..." oninput="render()" style="width: auto; min-width: 250px; margin: 0;">
+        </div>
+
+        <p style="color:#ccc; font-size: 0.9em;">Alle laufenden Prozesse der Fraktion in der Übersicht.</p>
+        <div id="craftList" style="max-height: 700px; overflow-y: auto; padding-right: 10px;"></div>
     </div>
 </div>
 
@@ -1162,8 +1172,13 @@ function tick() {
 
 function render() {
     let list = document.getElementById("craftList"); if (!list) return;
-    list.innerHTML = ""; let now = Date.now();
+    list.innerHTML = ""; 
+    let now = Date.now();
     
+    // Filter-Werte abgreifen
+    let typeFilter = document.getElementById("filterType").value;
+    let routeFilter = document.getElementById("filterRoute").value.toLowerCase();
+
     if(crafts.length === 0) { 
         list.innerHTML = "<p style='color:#aaa; text-align:center; padding: 20px;'>Aktuell laufen keine Produktionen.</p>"; 
         return; 
@@ -1175,7 +1190,18 @@ function render() {
         return aTime - bTime;
     });
 
+    let hasVisibleItems = false;
+
     sortedCrafts.forEach(c => {
+        // --- FILTER LOGIK ---
+        const matchesUser = (typeFilter === "all" || c.startedBy === currentUser);
+        const matchesRoute = (routeFilter === "" || c.name.toLowerCase().includes(routeFilter));
+
+        if (!matchesUser || !matchesRoute) return; // Überspringe, wenn Filter nicht passt
+        
+        hasVisibleItems = true;
+        // --------------------
+
         let remainingMs = c.paused ? c.remainingTime : (c.endTime - now);
         let remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
         let percent = Math.min(100, Math.max(0, 100 - (remainingMs / c.totalDuration * 100)));
@@ -1212,6 +1238,10 @@ function render() {
             ${controlsHtml}
         </div>`;
     });
+
+    if(!hasVisibleItems) {
+        list.innerHTML = "<p style='color:#aaa; text-align:center; padding: 20px;'>Keine Produktionen gefunden, die auf den Filter passen.</p>";
+    }
 }
 
 function format(s) {
