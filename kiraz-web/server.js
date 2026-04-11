@@ -14,6 +14,9 @@ const REQUIRED_ROLE_ID = '1483760063687426170';
 // Admin Rollen (die löschen, setzen und bearbeiten dürfen)
 const ADMIN_ROLES = ['1484284804143906956', '1483760533197951099'];
 
+// NEU: Spezielle Leader Rolle, die als einziges die Checkliste sehen darf
+const LEADER_ROLE = '1484284804143906956';
+
 // Verhindert, dass alte Versionen im Browser gecached werden
 app.use((req, res, next) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -65,16 +68,22 @@ app.get('/callback', async (req, res) => {
 
         const roles = memberResponse.data.roles; 
         
-        // --- NEU: Den SERVER-Nicknamen auslesen ---
+        // --- Den SERVER-Nicknamen auslesen ---
         const discordMember = memberResponse.data;
         // Priorität: 1. Server-Nickname, 2. Globaler Name, 3. Standard Username
         const displayName = discordMember.nick || discordMember.user.global_name || discordMember.user.username;
 
         if (roles.includes(REQUIRED_ROLE_ID)) {
             const isAdmin = roles.some(role => ADMIN_ROLES.includes(role));
+            
+            // NEU: Prüfen ob der Nutzer die Leader-Rolle hat
+            const isLeader = roles.includes(LEADER_ROLE);
+
             req.session.isAuthorized = true; 
             req.session.username = displayName; 
             req.session.isAdmin = isAdmin; 
+            req.session.isLeader = isLeader; // NEU: In der Session abspeichern
+            
             res.redirect('/dashboard');
         } else {
             res.status(403).send('<h1>Zugriff verweigert</h1><p>Du bist zwar auf dem Server, hast aber nicht die benötigte Rolle.</p>');
@@ -89,7 +98,8 @@ app.get('/api/user', (req, res) => {
     if (req.session.isAuthorized && req.session.username) {
         res.json({ 
             username: req.session.username,
-            isAdmin: req.session.isAdmin || false 
+            isAdmin: req.session.isAdmin || false,
+            isLeader: req.session.isLeader || false // NEU: Info an das Frontend (dashboard.html) senden
         });
     } else {
         res.status(401).json({ error: "Nicht eingeloggt" });
