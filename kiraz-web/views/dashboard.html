@@ -718,45 +718,53 @@ let currentUser = "Unbekannt";
 let isUserAdmin = false; 
 
 // --- ONLINE HEARTBEAT ---
-function updateOnlineStatus() {
-    if(currentUser !== "Unbekannt") {
-        db.collection("online").doc(currentUser).set({
-            username: currentUser,
-            lastActive: Date.now(),
-            isAdmin: isUserAdmin
-        }).catch(err => console.log("Fehler beim Online-Status: ", err));
-    }
-}
-setInterval(updateOnlineStatus, 10000);
-
 db.collection("online").onSnapshot((snapshot) => {
     const list = document.getElementById("onlineList");
     const countBtn = document.getElementById("onlineCountBtn");
     if(!list || !countBtn) return;
 
     let now = Date.now();
-    let onlineHtml = "";
-    let count = 0;
+    let members = [];
 
     snapshot.forEach(doc => {
-        let data = doc.data();
-        if (now - data.lastActive < 30000) {
-            let adminStar = data.isAdmin ? ' <span style="color:#ffcc00;" title="Fraktionsleitung">⭐</span>' : '';
-            
-            onlineHtml += `<div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1.1em;">
-                            🟢 <span style="color: #fff; font-weight: bold; margin-left: 10px;">${data.username}${adminStar}</span>
-                           </div>`;
-            count++;
-        }
+        members.push(doc.data());
     });
 
-    if(count === 0) {
-        list.innerHTML = "<p style='color:#aaa; text-align:center; margin-top:20px;'>Gerade ist niemand online.</p>";
+    // Sortierung: Online zuerst, dann nach letzter Aktivität (neueste zuerst)
+    members.sort((a, b) => b.lastActive - a.lastActive);
+
+    let listHtml = "";
+    let onlineCount = 0;
+
+    members.forEach(data => {
+        let diff = now - data.lastActive;
+        let isOnline = diff < 30000; // 30 Sekunden Schwelle
+        let adminStar = data.isAdmin ? ' <span style="color:#ffcc00;" title="Fraktionsleitung">⭐</span>' : '';
+        
+        let statusIcon = isOnline ? "🟢" : "⚪";
+        if (isOnline) onlineCount++;
+
+        // Zeitformatierung für "Zuletzt online"
+        let timeLabel = isOnline ? 
+            '<span style="color: #77dd77; font-size: 0.8em;">Aktiv</span>' : 
+            `<span style="color: #aaa; font-size: 0.8em;">Zuletzt: ${new Date(data.lastActive).toLocaleString("de-DE", {hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'})}</span>`;
+
+        listHtml += `
+            <div style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    ${statusIcon} <span style="color: #fff; font-weight: bold; margin-left: 10px; opacity: ${isOnline ? '1' : '0.6'}">${data.username}${adminStar}</span>
+                </div>
+                ${timeLabel}
+            </div>`;
+    });
+
+    if(members.length === 0) {
+        list.innerHTML = "<p style='color:#aaa; text-align:center; margin-top:20px;'>Noch keine Daten vorhanden.</p>";
     } else {
-        list.innerHTML = onlineHtml;
+        list.innerHTML = listHtml;
     }
     
-    countBtn.innerText = `👥 Online (${count})`;
+    countBtn.innerText = `👥 Online (${onlineCount})`;
 });
 
 // --- LOG FUNKTION ---
