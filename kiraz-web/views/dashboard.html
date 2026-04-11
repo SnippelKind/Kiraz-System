@@ -1490,14 +1490,28 @@ function clearAllMarkers() {
 // --- CHECKLISTEN LOGIK (Nur für Leader) ---
 let isUserLeader = false;
 let checklistData = {};
+let factionRoster = [];
 
-function initChecklist() {
+async function initChecklist() {
+    if(!isUserLeader) return;
+
+    try {
+        const res = await fetch('/api/faction-members');
+        if(res.ok) {
+            factionRoster = await res.json();
+        } else {
+            console.error("Konnte Mitgliederliste nicht laden. BOT_TOKEN in der .env geprüft?");
+        }
+    } catch (error) {
+        console.error("Fehler beim Fetch:", error);
+    }
+
     db.collection("checklist").onSnapshot((snapshot) => {
         checklistData = {};
         snapshot.forEach(doc => {
             checklistData[doc.id] = doc.data().tasks || [];
         });
-        if(isUserLeader) renderChecklist();
+        renderChecklist();
     });
 }
 
@@ -1506,62 +1520,65 @@ function renderChecklist() {
     if(!container) return;
     container.innerHTML = "";
 
-    const ranks = [
-        "Rang 12 (Leitung)", "Rang 11", "Rang 10", "Rang 9", "Rang 8",
-        "Rang 7", "Rang 6", "Rang 5", "Rang 4", "Rang 3", "Rang 2", "Rang 1"
-    ];
+    if (factionRoster.length === 0) {
+        container.innerHTML = "<p style='color:#ff6b6b; padding: 20px; background: rgba(0,0,0,0.5); border-radius: 10px;'>❌ <b>Fehler:</b> Es konnten keine Fraktionsmitglieder geladen werden. Bitte prüfe, ob der Bot auf dem Server ist und der <b>BOT_TOKEN</b> in Render eingetragen wurde.</p>";
+        return;
+    }
 
-    ranks.forEach((rank, index) => {
-        let tasks = checklistData[rank] || [];
+    factionRoster.forEach((member) => {
+        let tasks = checklistData[member.id] || [];
         
         let tasksHtml = tasks.map((t, i) => `
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 5px; border: 1px solid #3e3e5e;">
-                <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleChecklistTask('${rank}', ${i})" style="width: 18px; height: 18px; cursor: pointer;">
+                <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleChecklistTask('${member.id}', ${i})" style="width: 18px; height: 18px; cursor: pointer;">
                 <span style="flex-grow: 1; font-size: 1.05em; ${t.done ? "text-decoration: line-through; color: #77dd77;" : "color: #fff;"}">${t.text}</span>
-                <button onclick="deleteChecklistTask('${rank}', ${i})" style="background: transparent; border: none; color: #ff6b6b; cursor: pointer; font-size: 1.2em; transition: 0.2s;">✖</button>
+                <button onclick="deleteChecklistTask('${member.id}', ${i})" style="background: transparent; border: none; color: #ff6b6b; cursor: pointer; font-size: 1.2em; transition: 0.2s;">✖</button>
             </div>
         `).join("");
 
         container.innerHTML += `
         <div style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px; border-left: 4px solid #e0aaff;">
-            <h3 style="margin-top: 0; color: #e0aaff; border-bottom: 1px solid #3e3e5e; padding-bottom: 5px;">${rank}</h3>
-            <div id="tasks_${index}" style="margin-bottom: 10px;">
-                ${tasksHtml.length > 0 ? tasksHtml : "<p style='color:#666; font-size:0.9em; margin: 0;'>Keine Einträge in diesem Rang.</p>"}
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #3e3e5e; padding-bottom: 5px; margin-bottom: 10px;">
+                <h3 style="margin: 0; color: #e0aaff;">👤 ${member.name}</h3>
+                <span style="background: #e0aaff; color: #121212; padding: 3px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold;">${member.rankName}</span>
+            </div>
+            <div id="tasks_${member.id}" style="margin-bottom: 10px;">
+                ${tasksHtml.length > 0 ? tasksHtml : "<p style='color:#666; font-size:0.9em; margin: 0;'>Keine Einträge für dieses Mitglied.</p>"}
             </div>
             <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" id="newTask_${index}" placeholder="Neuen Eintrag hinzufügen..." style="flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #3e3e5e; background: #121212; color: #fff;">
-                <button onclick="addChecklistTask('${rank}', ${index})" style="background: #77dd77; border: none; padding: 10px 20px; border-radius: 5px; color: #000; font-weight: bold; cursor: pointer;">Hinzufügen</button>
+                <input type="text" id="newTask_${member.id}" placeholder="Neuen Eintrag für ${member.name} hinzufügen..." style="flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #3e3e5e; background: #121212; color: #fff;">
+                <button onclick="addChecklistTask('${member.id}')" style="background: #77dd77; border: none; padding: 10px 20px; border-radius: 5px; color: #000; font-weight: bold; cursor: pointer;">Hinzufügen</button>
             </div>
         </div>
         `;
     });
 }
 
-function addChecklistTask(rank, index) {
-    const input = document.getElementById(`newTask_${index}`);
+function addChecklistTask(memberId) {
+    const input = document.getElementById(`newTask_${memberId}`);
     const text = input.value.trim();
     if(!text) return;
 
-    let tasks = checklistData[rank] || [];
+    let tasks = checklistData[memberId] || [];
     tasks.push({ text: text, done: false });
 
-    db.collection("checklist").doc(rank).set({ tasks: tasks })
+    db.collection("checklist").doc(memberId).set({ tasks: tasks })
         .then(() => { input.value = ""; });
 }
 
-function toggleChecklistTask(rank, taskIndex) {
-    let tasks = checklistData[rank] || [];
+function toggleChecklistTask(memberId, taskIndex) {
+    let tasks = checklistData[memberId] || [];
     if(tasks[taskIndex]) {
         tasks[taskIndex].done = !tasks[taskIndex].done;
-        db.collection("checklist").doc(rank).set({ tasks: tasks });
+        db.collection("checklist").doc(memberId).set({ tasks: tasks });
     }
 }
 
-function deleteChecklistTask(rank, taskIndex) {
-    let tasks = checklistData[rank] || [];
+function deleteChecklistTask(memberId, taskIndex) {
+    let tasks = checklistData[memberId] || [];
     if(tasks[taskIndex]) {
         tasks.splice(taskIndex, 1);
-        db.collection("checklist").doc(rank).set({ tasks: tasks });
+        db.collection("checklist").doc(memberId).set({ tasks: tasks });
     }
 }
 
@@ -1587,7 +1604,7 @@ fetch('/api/user')
             if(data.isLeader) {
                 isUserLeader = true;
                 document.getElementById('checklistBtn').style.display = "inline-block";
-                initChecklist(); // Checkliste aus Firebase laden
+                initChecklist(); // Checkliste aus Firebase und Discord laden
             }
             
             updateOnlineStatus();
