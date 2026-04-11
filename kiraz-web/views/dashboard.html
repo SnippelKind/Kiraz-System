@@ -738,7 +738,7 @@ db.collection("online").onSnapshot((snapshot) => {
 
     members.forEach(data => {
         let diff = now - data.lastActive;
-        let isOnline = diff < 30000; // 30 Sekunden Schwelle
+        let isOnline = diff < 2000; // 30 Sekunden Schwelle
         let adminStar = data.isAdmin ? ' <span style="color:#ffcc00;" title="Fraktionsleitung">⭐</span>' : '';
         
         let statusIcon = isOnline ? "🟢" : "⚪";
