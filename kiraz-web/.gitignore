@@ -1,1 +1,9 @@
+# Versteckte Umweltvariablen (Tokens, Passwörter)
+.env
 
+# Node.js Module (die laden sich Nutzer selbst runter)
+node_modules/
+
+# Mac/Windows Systemdateien (optional, aber gut)
+.DS_Store
+Thumbs.db
