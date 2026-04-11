@@ -440,8 +440,8 @@
     <div class="tabs">
         <button onclick="openRoute('timerTab')">⏱ Alle Timer</button>
         <button onclick="openRoute('smeltTab')">🔥 Schmelzofen</button>
-        <!-- NEU: Log Button ist standardmäßig unsichtbar -->
         <button id="logBtn" onclick="openRoute('logTab')" style="display:none;">📜 Protokoll</button>
+        <button id="checklistBtn" onclick="openRoute('checklistTab')" style="display:none; background: #e0aaff; color: #121212;">📋 Rang-Checkliste</button>
         <button id="onlineCountBtn" onclick="openRoute('onlineTab')">👥 Online (0)</button>
     </div>
 </div>
@@ -462,6 +462,16 @@
         <p style="color:#ccc;">Die letzten 50 Aktionen der Fraktion. (Nur für die Leitung sichtbar)</p>
         <div id="logList" style="text-align: left; max-height: 600px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px; border: 1px solid #3e3e5e;">
             Lädt Protokoll...
+        </div>
+    </div>
+</div>
+
+<div id="checklistTab" style="display:none;">
+    <div class="box box-large">
+        <h2 style="color:#e0aaff">📋 Rang-Checkliste</h2>
+        <p style="color:#ccc;">Dieser Bereich ist absolut vertraulich und nur für die Leitung einseh- und bearbeitbar.</p>
+        <div id="checklistContent" style="text-align: left; margin-top: 20px;">
+            Lädt Checkliste...
         </div>
     </div>
 </div>
@@ -713,7 +723,7 @@ function updateOnlineStatus() {
         db.collection("online").doc(currentUser).set({
             username: currentUser,
             lastActive: Date.now(),
-            isAdmin: isUserAdmin // NEU: Sendet mit, ob der User ein Admin ist
+            isAdmin: isUserAdmin
         }).catch(err => console.log("Fehler beim Online-Status: ", err));
     }
 }
@@ -731,7 +741,6 @@ db.collection("online").onSnapshot((snapshot) => {
     snapshot.forEach(doc => {
         let data = doc.data();
         if (now - data.lastActive < 30000) {
-            // NEU: Wenn der User Admin ist, hänge einen goldenen Stern an den Namen
             let adminStar = data.isAdmin ? ' <span style="color:#ffcc00;" title="Fraktionsleitung">⭐</span>' : '';
             
             onlineHtml += `<div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1.1em;">
@@ -843,6 +852,7 @@ function showDashboard() {
     document.getElementById('munitionTab').style.display = "none";
     document.getElementById('geldwaescheTab').style.display = "none"; 
     document.getElementById('schwarzmarktTab').style.display = "none"; 
+    document.getElementById('checklistTab').style.display = "none";
     document.getElementById('timerTab').style.display = "none";
     document.getElementById('smeltTab').style.display = "none";
     document.getElementById('mapTab').style.display = "none";
@@ -1192,7 +1202,6 @@ function render() {
     list.innerHTML = ""; 
     let now = Date.now();
     
-    // Filter-Werte abrufen
     let userFilter = document.getElementById("filterUser").value;
     let routeFilter = document.getElementById("filterRoute").value;
     
@@ -1201,22 +1210,18 @@ function render() {
         return; 
     }
     
-    // 1. Sortieren nach Endzeit
     let displayCrafts = [...crafts].sort((a, b) => {
         let aTime = a.paused ? (now + a.remainingTime) : a.endTime;
         let bTime = b.paused ? (now + b.remainingTime) : b.endTime;
         return aTime - bTime;
     });
 
-    // 2. Filtern nach Benutzer
     if (userFilter === "me") {
         displayCrafts = displayCrafts.filter(c => c.startedBy === currentUser);
     }
 
-    // 3. Filtern nach Route
     if (routeFilter !== "all") {
         displayCrafts = displayCrafts.filter(c => {
-            // Prüft, ob der Name des Crafts das Wort aus dem Filter enthält (z.B. "Ephi")
             return c.name.toLowerCase().includes(routeFilter.toLowerCase());
         });
     }
@@ -1482,6 +1487,84 @@ function clearAllMarkers() {
     }
 }
 
+// --- CHECKLISTEN LOGIK (Nur für Leader) ---
+let isUserLeader = false;
+let checklistData = {};
+
+function initChecklist() {
+    db.collection("checklist").onSnapshot((snapshot) => {
+        checklistData = {};
+        snapshot.forEach(doc => {
+            checklistData[doc.id] = doc.data().tasks || [];
+        });
+        if(isUserLeader) renderChecklist();
+    });
+}
+
+function renderChecklist() {
+    const container = document.getElementById("checklistContent");
+    if(!container) return;
+    container.innerHTML = "";
+
+    const ranks = [
+        "Rang 12 (Leitung)", "Rang 11", "Rang 10", "Rang 9", "Rang 8",
+        "Rang 7", "Rang 6", "Rang 5", "Rang 4", "Rang 3", "Rang 2", "Rang 1"
+    ];
+
+    ranks.forEach((rank, index) => {
+        let tasks = checklistData[rank] || [];
+        
+        let tasksHtml = tasks.map((t, i) => `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 5px; border: 1px solid #3e3e5e;">
+                <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleChecklistTask('${rank}', ${i})" style="width: 18px; height: 18px; cursor: pointer;">
+                <span style="flex-grow: 1; font-size: 1.05em; ${t.done ? "text-decoration: line-through; color: #77dd77;" : "color: #fff;"}">${t.text}</span>
+                <button onclick="deleteChecklistTask('${rank}', ${i})" style="background: transparent; border: none; color: #ff6b6b; cursor: pointer; font-size: 1.2em; transition: 0.2s;">✖</button>
+            </div>
+        `).join("");
+
+        container.innerHTML += `
+        <div style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px; border-left: 4px solid #e0aaff;">
+            <h3 style="margin-top: 0; color: #e0aaff; border-bottom: 1px solid #3e3e5e; padding-bottom: 5px;">${rank}</h3>
+            <div id="tasks_${index}" style="margin-bottom: 10px;">
+                ${tasksHtml.length > 0 ? tasksHtml : "<p style='color:#666; font-size:0.9em; margin: 0;'>Keine Einträge in diesem Rang.</p>"}
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <input type="text" id="newTask_${index}" placeholder="Neuen Eintrag hinzufügen..." style="flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #3e3e5e; background: #121212; color: #fff;">
+                <button onclick="addChecklistTask('${rank}', ${index})" style="background: #77dd77; border: none; padding: 10px 20px; border-radius: 5px; color: #000; font-weight: bold; cursor: pointer;">Hinzufügen</button>
+            </div>
+        </div>
+        `;
+    });
+}
+
+function addChecklistTask(rank, index) {
+    const input = document.getElementById(`newTask_${index}`);
+    const text = input.value.trim();
+    if(!text) return;
+
+    let tasks = checklistData[rank] || [];
+    tasks.push({ text: text, done: false });
+
+    db.collection("checklist").doc(rank).set({ tasks: tasks })
+        .then(() => { input.value = ""; });
+}
+
+function toggleChecklistTask(rank, taskIndex) {
+    let tasks = checklistData[rank] || [];
+    if(tasks[taskIndex]) {
+        tasks[taskIndex].done = !tasks[taskIndex].done;
+        db.collection("checklist").doc(rank).set({ tasks: tasks });
+    }
+}
+
+function deleteChecklistTask(rank, taskIndex) {
+    let tasks = checklistData[rank] || [];
+    if(tasks[taskIndex]) {
+        tasks.splice(taskIndex, 1);
+        db.collection("checklist").doc(rank).set({ tasks: tasks });
+    }
+}
+
 // --- Discord-Namen laden UND Admin Rechte abfragen ---
 fetch('/api/user')
     .then(response => response.json())
@@ -1497,11 +1580,16 @@ fetch('/api/user')
                 document.getElementById('deleteAllBtn').style.display = "block";
                 document.getElementById('deleteSingleBtn').style.display = "block";
                 document.getElementById('editSingleBtn').style.display = "block"; 
-                // NEU: Protokoll Button wird hier für Admins eingeblendet
                 document.getElementById('logBtn').style.display = "inline-block"; 
             }
+
+            // NEU: Prüfen, ob der Nutzer die 1484284804143906956 Rolle hat
+            if(data.isLeader) {
+                isUserLeader = true;
+                document.getElementById('checklistBtn').style.display = "inline-block";
+                initChecklist(); // Checkliste aus Firebase laden
+            }
             
-            // NEU: Den Online-Status erst pushen, wenn geprüft wurde, ob man Admin ist
             updateOnlineStatus();
         }
     })
