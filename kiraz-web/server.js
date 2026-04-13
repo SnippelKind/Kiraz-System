@@ -14,8 +14,8 @@ const REQUIRED_ROLE_ID = '1483760063687426170';
 // Admin Rollen (die löschen, setzen und bearbeiten dürfen)
 const ADMIN_ROLES = ['1484284804143906956', '1483765220114563072', '1483760533197951099'];
 
-// Spezielle Leader Rolle, die als einziges die Checkliste sehen darf
-const LEADER_ROLE = '1484284804143906956';
+// Spezielle Leader Rollen, die als einzige die Checkliste sehen dürfen
+const LEADER_ROLES = ['1484284804143906956', '1485002612372668557'];
 
 // Exakte Reihenfolge der Rollen-IDs für die Checkliste (von oben nach unten)
 const RANK_ORDER = [
@@ -85,19 +85,18 @@ app.get('/callback', async (req, res) => {
 
         const roles = memberResponse.data.roles; 
         
-        // --- Den SERVER-Nicknamen auslesen ---
         const discordMember = memberResponse.data;
-        // Priorität: 1. Server-Nickname, 2. Globaler Name, 3. Standard Username
         const displayName = discordMember.nick || discordMember.user.global_name || discordMember.user.username;
 
         if (roles.includes(REQUIRED_ROLE_ID)) {
             const isAdmin = roles.some(role => ADMIN_ROLES.includes(role));
-            const isLeader = roles.includes(LEADER_ROLE); // Prüft auf die Leader Rolle
+            // Prüft, ob der User mindestens eine der Leader-Rollen besitzt
+            const isLeader = roles.some(role => LEADER_ROLES.includes(role));
 
             req.session.isAuthorized = true; 
             req.session.username = displayName; 
             req.session.isAdmin = isAdmin; 
-            req.session.isLeader = isLeader; // Speichert den Leader Status in der Session
+            req.session.isLeader = isLeader; 
             
             res.redirect('/dashboard');
         } else {
@@ -114,27 +113,23 @@ app.get('/api/user', (req, res) => {
         res.json({ 
             username: req.session.username,
             isAdmin: req.session.isAdmin || false,
-            isLeader: req.session.isLeader || false // Gibt die Info ans Dashboard weiter
+            isLeader: req.session.isLeader || false 
         });
     } else {
         res.status(401).json({ error: "Nicht eingeloggt" });
     }
 });
 
-// NEU: Fraktionsmitglieder vom Discord-Server abrufen (über Bot Token)
 app.get('/api/faction-members', async (req, res) => {
-    // Nur die Leitung darf diese Liste abrufen
     if (!req.session.isLeader) return res.status(403).json({ error: "Keine Rechte" });
     if (!process.env.BOT_TOKEN) return res.status(500).json({ error: "BOT_TOKEN fehlt in .env" });
 
     try {
-        // 1. Hole Rollen-Infos (für die Namen der Ränge)
         const rolesRes = await axios.get(`https://discord.com/api/guilds/${REQUIRED_GUILD_ID}/roles`, {
             headers: { Authorization: `Bot ${process.env.BOT_TOKEN}` }
         });
         const rolesData = rolesRes.data;
 
-        // 2. Hole ALLE Mitglieder des Servers
         const membersRes = await axios.get(`https://discord.com/api/guilds/${REQUIRED_GUILD_ID}/members?limit=1000`, {
             headers: { Authorization: `Bot ${process.env.BOT_TOKEN}` }
         });
@@ -142,16 +137,13 @@ app.get('/api/faction-members', async (req, res) => {
 
         let factionMembers = [];
 
-        // 3. Sortiere die Leute strikt nach deiner Reihenfolge
         RANK_ORDER.forEach(roleId => {
             const roleInfo = rolesData.find(r => r.id === roleId);
             const roleName = roleInfo ? roleInfo.name : "Unbekannter Rang";
 
-            // Finde alle Mitglieder, die diese spezifische Rolle besitzen
             const people = membersData.filter(m => m.roles.includes(roleId));
 
             people.forEach(p => {
-                // Verhindert Duplikate, falls ein User mehrere Rollen aus der Liste hat 
                 if (!factionMembers.find(fm => fm.id === p.user.id)) {
                     const name = p.nick || p.user.global_name || p.user.username;
                     factionMembers.push({
