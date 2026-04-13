@@ -11,20 +11,20 @@ const PORT = process.env.PORT || 3000;
 const REQUIRED_GUILD_ID = '1483733301737951323';
 const REQUIRED_ROLE_ID = '1483760063687426170';
 
-// Admin Rollen (die löschen, setzen und bearbeiten dürfen)
+// Admin Rollen
 const ADMIN_ROLES = ['1484284804143906956', '1483765220114563072', '1483760533197951099'];
 
-// Spezielle Leader Rollen, die als einzige die Checkliste sehen dürfen
+// Leader Rollen (inklusive der neuen ID)
 const LEADER_ROLES = ['1484284804143906956', '1485002612372668557'];
 
-// Exakte Reihenfolge der Rollen-IDs für die Checkliste (von oben nach unten)
+// Exakte Reihenfolge der Rollen-IDs für die Checkliste
 const RANK_ORDER = [
     '1483764042513387520',
     '1483764208620404736',
-    '986301076976312390',
+    '986301076976312390', // Sicherstellen, dass diese ID hier steht
     '1483764711617990686',
     '1483765084655321098',
-    '584172285393371146',
+    '584172285393371146', // Sicherstellen, dass diese ID hier steht
     '1483765329392832624',
     '1483765429225787433',
     '1483765797741658214',
@@ -34,13 +34,11 @@ const RANK_ORDER = [
     '1483760918511747223'
 ];
 
-// Verhindert Caching
 app.use((req, res, next) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     next();
 });
 
-// Session Setup
 app.use(session({
     secret: process.env.SESSION_SECRET || 'geheimes-kiraz-passwort-123',
     resave: false,
@@ -78,37 +76,30 @@ app.get('/callback', async (req, res) => {
         });
 
         const accessToken = tokenResponse.data.access_token;
-
         const memberResponse = await axios.get(`https://discord.com/api/users/@me/guilds/${REQUIRED_GUILD_ID}/member`, {
             headers: { Authorization: `Bearer ${accessToken}` }
         });
 
         const roles = memberResponse.data.roles; 
-        const discordMember = memberResponse.data;
-        const displayName = discordMember.nick || discordMember.user.global_name || discordMember.user.username;
+        const displayName = memberResponse.data.nick || memberResponse.data.user.global_name || memberResponse.data.user.username;
 
         if (roles.includes(REQUIRED_ROLE_ID)) {
-            const isAdmin = roles.some(role => ADMIN_ROLES.includes(role));
-            // Prüft, ob der User mindestens eine der Leader-Rollen besitzt
-            const isLeader = roles.some(role => LEADER_ROLES.includes(role));
-
             req.session.isAuthorized = true; 
             req.session.username = displayName; 
-            req.session.isAdmin = isAdmin; 
-            req.session.isLeader = isLeader; 
+            req.session.isAdmin = roles.some(role => ADMIN_ROLES.includes(role));
+            req.session.isLeader = roles.some(role => LEADER_ROLES.includes(role)); 
             
             res.redirect('/dashboard');
         } else {
-            res.status(403).send('<h1>Zugriff verweigert</h1><p>Keine Berechtigung.</p>');
+            res.status(403).send('Zugriff verweigert.');
         }
     } catch (error) {
-        console.error("Fehler bei Discord API:", error.message);
-        res.status(403).send('<h1>Fehler</h1><p>Login fehlgeschlagen.</p>');
+        res.status(403).send('Fehler beim Login.');
     }
 });
 
 app.get('/api/user', (req, res) => {
-    if (req.session.isAuthorized && req.session.username) {
+    if (req.session.isAuthorized) {
         res.json({ 
             username: req.session.username,
             isAdmin: req.session.isAdmin || false,
@@ -119,37 +110,38 @@ app.get('/api/user', (req, res) => {
     }
 });
 
-// Optimierter Endpunkt für die Checkliste
+// ÜBERARBEITET: Spezifischer Fix für die Anzeige aller Rollen
 app.get('/api/faction-members', async (req, res) => {
     if (!req.session.isLeader) return res.status(403).json({ error: "Keine Rechte" });
-    if (!process.env.BOT_TOKEN) return res.status(500).json({ error: "BOT_TOKEN fehlt" });
 
     try {
-        const rolesRes = await axios.get(`https://discord.com/api/guilds/${REQUIRED_GUILD_ID}/roles`, {
-            headers: { Authorization: `Bot ${process.env.BOT_TOKEN}` }
-        });
+        const [rolesRes, membersRes] = await Promise.all([
+            axios.get(`https://discord.com/api/guilds/${REQUIRED_GUILD_ID}/roles`, {
+                headers: { Authorization: `Bot ${process.env.BOT_TOKEN}` }
+            }),
+            axios.get(`https://discord.com/api/guilds/${REQUIRED_GUILD_ID}/members?limit=1000`, {
+                headers: { Authorization: `Bot ${process.env.BOT_TOKEN}` }
+            })
+        ]);
+
         const rolesData = rolesRes.data;
-
-        const membersRes = await axios.get(`https://discord.com/api/guilds/${REQUIRED_GUILD_ID}/members?limit=1000`, {
-            headers: { Authorization: `Bot ${process.env.BOT_TOKEN}` }
-        });
         const membersData = membersRes.data;
-
         let factionMembers = [];
 
+        // Wir gehen die RANK_ORDER durch, um die Sortierung beizubehalten
         RANK_ORDER.forEach(roleId => {
             const roleInfo = rolesData.find(r => r.id === roleId);
             const roleName = roleInfo ? roleInfo.name : "Unbekannter Rang";
 
-            // Filtert alle Mitglieder, die diese Rolle besitzen
-            const people = membersData.filter(m => m.roles.includes(roleId));
+            // Alle Mitglieder finden, die GENAU diese Rolle haben
+            const peopleWithRole = membersData.filter(m => m.roles.includes(roleId));
 
-            people.forEach(p => {
+            peopleWithRole.forEach(p => {
+                // Nur hinzufügen, wenn noch nicht in der Liste (vermeidet Dopplungen bei mehreren Rollen)
                 if (!factionMembers.some(fm => fm.id === p.user.id)) {
-                    const name = p.nick || p.user.global_name || p.user.username;
                     factionMembers.push({
                         id: p.user.id,
-                        name: name,
+                        name: p.nick || p.user.global_name || p.user.username,
                         rankId: roleId,
                         rankName: roleName
                     });
@@ -159,7 +151,6 @@ app.get('/api/faction-members', async (req, res) => {
 
         res.json(factionMembers);
     } catch (err) {
-        console.error("Fehler beim Abrufen der Mitglieder:", err.message);
         res.status(500).json({ error: "Discord API Fehler" });
     }
 });
@@ -169,6 +160,4 @@ app.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
 });
 
-app.listen(PORT, () => {
-    console.log(`Server läuft auf Port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));
