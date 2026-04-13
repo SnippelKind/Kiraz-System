@@ -34,7 +34,7 @@ const RANK_ORDER = [
     '1483760918511747223'
 ];
 
-// Verhindert, dass alte Versionen im Browser gecached werden
+// Verhindert Caching
 app.use((req, res, next) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     next();
@@ -84,7 +84,6 @@ app.get('/callback', async (req, res) => {
         });
 
         const roles = memberResponse.data.roles; 
-        
         const discordMember = memberResponse.data;
         const displayName = discordMember.nick || discordMember.user.global_name || discordMember.user.username;
 
@@ -100,11 +99,11 @@ app.get('/callback', async (req, res) => {
             
             res.redirect('/dashboard');
         } else {
-            res.status(403).send('<h1>Zugriff verweigert</h1><p>Du bist zwar auf dem Server, hast aber nicht die benötigte Rolle.</p>');
+            res.status(403).send('<h1>Zugriff verweigert</h1><p>Keine Berechtigung.</p>');
         }
     } catch (error) {
-        console.error("Fehler bei Discord API:", error.response ? error.response.data : error.message);
-        res.status(403).send('<h1>Zugriff verweigert</h1><p>Du bist nicht auf dem Discord-Server oder ein Fehler ist aufgetreten.</p>');
+        console.error("Fehler bei Discord API:", error.message);
+        res.status(403).send('<h1>Fehler</h1><p>Login fehlgeschlagen.</p>');
     }
 });
 
@@ -120,9 +119,10 @@ app.get('/api/user', (req, res) => {
     }
 });
 
+// Optimierter Endpunkt für die Checkliste
 app.get('/api/faction-members', async (req, res) => {
     if (!req.session.isLeader) return res.status(403).json({ error: "Keine Rechte" });
-    if (!process.env.BOT_TOKEN) return res.status(500).json({ error: "BOT_TOKEN fehlt in .env" });
+    if (!process.env.BOT_TOKEN) return res.status(500).json({ error: "BOT_TOKEN fehlt" });
 
     try {
         const rolesRes = await axios.get(`https://discord.com/api/guilds/${REQUIRED_GUILD_ID}/roles`, {
@@ -141,10 +141,11 @@ app.get('/api/faction-members', async (req, res) => {
             const roleInfo = rolesData.find(r => r.id === roleId);
             const roleName = roleInfo ? roleInfo.name : "Unbekannter Rang";
 
+            // Filtert alle Mitglieder, die diese Rolle besitzen
             const people = membersData.filter(m => m.roles.includes(roleId));
 
             people.forEach(p => {
-                if (!factionMembers.find(fm => fm.id === p.user.id)) {
+                if (!factionMembers.some(fm => fm.id === p.user.id)) {
                     const name = p.nick || p.user.global_name || p.user.username;
                     factionMembers.push({
                         id: p.user.id,
@@ -158,7 +159,7 @@ app.get('/api/faction-members', async (req, res) => {
 
         res.json(factionMembers);
     } catch (err) {
-        console.error("Fehler beim Abrufen der Fraktionsmitglieder:", err.message);
+        console.error("Fehler beim Abrufen der Mitglieder:", err.message);
         res.status(500).json({ error: "Discord API Fehler" });
     }
 });
