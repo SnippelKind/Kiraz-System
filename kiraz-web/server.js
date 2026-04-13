@@ -15,7 +15,7 @@ const REQUIRED_ROLE_ID = '1483760063687426170';
 const ADMIN_ROLES = ['1484284804143906956', '1483765220114563072', '1483760533197951099'];
 
 // Spezielle Leader Rolle, die als einziges die Checkliste sehen darf
-const LEADER_ROLE = ['1484284804143906956', '1483765220114563072'];
+const LEADER_ROLE = '1484284804143906956';
 
 // Exakte Reihenfolge der Rollen-IDs für die Checkliste (von oben nach unten)
 const RANK_ORDER = [
