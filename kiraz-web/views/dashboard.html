@@ -10,9 +10,9 @@
 <style>
     body {
         font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        background: #0f0f1a;
-        background: radial-gradient(circle, #1e1e2f 0%, #0f0f1a 100%);
-        background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('/public/japan-fantasy-landscape.jpg');
+        background: #0a0a0a;
+        background: radial-gradient(circle, #222222 0%, #050505 100%);
+        background-image: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('/public/japan-fantasy-landscape.jpg');
         background-attachment: fixed;
         background-size: cover;
         color: white;
@@ -24,34 +24,34 @@
     h1 {
         font-size: 3em;
         margin-top: 50px;
-        color: #ffb7c5;
-        text-shadow: 0 0 20px rgba(255, 183, 197, 0.6), 2px 2px 5px rgba(0,0,0,0.8);
+        color: #ffffff; /* Weiß statt Pink */
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.3), 2px 2px 5px rgba(0,0,0,0.8);
     }
 
     .subtitle {
         font-size: 1.4em;
         font-weight: bold;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.7);
         display: inline-block;
         padding: 5px 20px;
         border-radius: 50px;
-        color: #ddd;
+        color: #cccccc;
         margin-bottom: 20px;
-        border: 1px solid rgba(255, 183, 197, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .user-profile {
         position: fixed;
         top: 20px;
         left: 20px;
-        background: rgba(20, 20, 35, 0.95);
-        border: 1px solid #ffb7c5;
+        background: rgba(15, 15, 15, 0.95);
+        border: 1px solid #555555; /* Grauer Rahmen */
         padding: 10px 20px;
         border-radius: 12px;
         color: white;
         font-weight: bold;
         z-index: 1000;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.8);
         display: flex;
         align-items: center;
         gap: 10px;
@@ -67,13 +67,13 @@
     }
 
     .route-card {
-        background: linear-gradient(145deg, #2a2a40, #1e1e2f);
+        background: linear-gradient(145deg, #2a2a2a, #1a1a1a); /* Grauverlauf */
         border-radius: 20px;
         overflow: hidden;
         cursor: pointer;
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.8);
         position: relative;
         min-height: 220px;
         display: flex;
@@ -83,64 +83,67 @@
 
     .route-card:hover {
         transform: scale(1.05);
-        border-color: #ffb7c5;
-        box-shadow: 0 15px 35px rgba(255, 183, 197, 0.4);
+        border-color: #ffffff; /* Weißer Hover-Rahmen */
+        box-shadow: 0 15px 35px rgba(255, 255, 255, 0.15);
     }
 
     .fallback-icon {
         position: absolute; top: 40%; left: 50%;
         transform: translate(-50%, -50%);
         font-size: 5em; opacity: 0.3; z-index: 1; transition: 0.3s;
+        color: #ffffff;
     }
     .route-card:hover .fallback-icon { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
 
     .route-card img {
         position: absolute; top: 0; left: 0;
         width: 100%; height: 100%; object-fit: cover;
-        display: block; opacity: 0.8; transition: 0.3s; z-index: 2;
+        display: block; opacity: 0.6; transition: 0.3s; z-index: 2; /* Etwas dunkler */
+        filter: grayscale(80%); /* Bilder leicht entsättigen für den Look */
     }
-    .route-card:hover img { opacity: 1; }
+    .route-card:hover img { opacity: 0.9; filter: grayscale(0%); }
 
     .route-title {
         position: relative; z-index: 3;
         padding: 20px; font-weight: bold; font-size: 1.3em;
         text-transform: uppercase; letter-spacing: 2px;
-        background: rgba(20, 20, 35, 0.95); color: #fff;
+        background: rgba(15, 15, 15, 0.95); color: #fff;
         margin: 0; border-top: 1px solid rgba(255,255,255,0.1);
     }
 
     .tabs { margin-top: 30px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
     .tabs button, .btn-home, .btn-danger, .btn-edit {
         padding: 15px 30px; border: none; border-radius: 12px;
-        background: #ffb7c5; cursor: pointer; font-weight: bold;
+        background: #cccccc; /* Helles Grau statt Pink */
+        cursor: pointer; font-weight: bold;
         transition: 0.3s; color: #121212; text-transform: uppercase;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     }
-    .tabs button:hover, .btn-home:hover { background: #fff; transform: translateY(-2px); }
+    .tabs button:hover, .btn-home:hover { background: #ffffff; transform: translateY(-2px); }
 
     .btn-home { position: fixed; top: 80px; left: 20px; z-index: 100; padding: 10px 20px; }
 
-    .btn-danger { background: #ff6b6b; color: white; margin-top: 20px; width: 100%; }
-    .btn-danger:hover { background: #ff4c4c; }
+    .btn-danger { background: #444444; color: white; margin-top: 20px; width: 100%; } /* Dunkelgrau statt Rot */
+    .btn-danger:hover { background: #666666; }
     
-    .btn-edit { background: #5bc0de; color: white; width: 100%; margin-bottom: 10px; }
-    .btn-edit:hover { background: #31b0d5; }
+    .btn-edit { background: #777777; color: white; width: 100%; margin-bottom: 10px; } /* Mittelgrau statt Blau */
+    .btn-edit:hover { background: #999999; }
 
     .box {
-        background: rgba(25, 25, 40, 0.95); padding: 30px;
+        background: rgba(20, 20, 20, 0.95); padding: 30px;
         border-radius: 25px; width: 95%; max-width: 500px;
-        margin: 40px auto; border: 1px solid #3e3e5e;
-        box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+        margin: 40px auto; border: 1px solid #333333;
+        box-shadow: 0 15px 50px rgba(0,0,0,0.9);
     }
     .box-large { max-width: 1400px; }
 
     select, input {
         margin: 10px 0; padding: 15px; width: 100%; box-sizing: border-box;
-        border-radius: 10px; border: 1px solid #3e3e5e;
-        background: #0f0f1a; color: white; font-size: 1em;
+        border-radius: 10px; border: 1px solid #444444;
+        background: #111111; color: white; font-size: 1em;
     }
 
-    .material { text-align: left; margin: 12px 0; font-size: 0.95em; color: #ccc; }
+    .material { text-align: left; margin: 12px 0; font-size: 0.95em; color: #bbbbbb; }
     
     .progressBar {
         width: 100%; height: 12px; background: rgba(255,255,255,0.05);
@@ -148,17 +151,19 @@
         border: 1px solid rgba(255,255,255,0.1);
     }
 
-    .progress { height: 100%; background: linear-gradient(90deg, #77dd77, #4cae4c); width: 0%; transition: width 0.5s ease; }
+    .progress { height: 100%; background: linear-gradient(90deg, #dddddd, #888888); width: 0%; transition: width 0.5s ease; } /* Grau/Weiß statt Grün */
 
-    .result { margin-top: 15px; font-weight: bold; font-size: 1.1em; }
+    .result { margin-top: 15px; font-weight: bold; font-size: 1.1em; color: #ffffff; }
 
     .btn-action {
         width: 100%; padding: 15px; border: none; border-radius: 10px;
-        background: #77dd77; color: #121212; font-weight: bold;
+        background: #dddddd; color: #121212; font-weight: bold;
         cursor: pointer; margin-top: 15px; font-size: 1.1em;
+        transition: 0.2s;
     }
+    .btn-action:hover { background: #ffffff; }
 
-    .smelt-info { font-size: 0.9em; color: #aaa; margin-bottom: 10px; }
+    .smelt-info { font-size: 0.9em; color: #aaaaaa; margin-bottom: 10px; }
 
     .map-layout {
         display: grid; grid-template-columns: 280px 1fr;
@@ -171,7 +176,7 @@
     }
 
     .legend-container {
-        background: rgba(15, 15, 26, 0.9); border: 1px solid #3e3e5e;
+        background: rgba(15, 15, 15, 0.9); border: 1px solid #333333;
         border-radius: 15px; padding: 15px; height: 600px;
         overflow-y: auto; box-sizing: border-box;
     }
@@ -179,12 +184,12 @@
     .legend-item {
         background: rgba(255, 255, 255, 0.05); padding: 12px; margin-bottom: 10px;
         border-radius: 8px; cursor: pointer; transition: 0.2s; 
-        border-left: 4px solid #ffb7c5; font-size: 0.95em; text-align: left; color: #ddd;
+        border-left: 4px solid #ffffff; font-size: 0.95em; text-align: left; color: #dddddd; /* Weißer Balken statt Pink */
     }
-    .legend-item:hover { background: rgba(255, 183, 197, 0.2); color: #fff; transform: translateX(5px); }
+    .legend-item:hover { background: rgba(255, 255, 255, 0.1); color: #fff; transform: translateX(5px); }
 
     .map-wrapper {
-        height: 600px; overflow: auto; border: 2px solid #3e3e5e;
+        height: 600px; overflow: auto; border: 2px solid #444444;
         border-radius: 15px; position: relative; background: #000; width: 100%;
     }
 
@@ -193,6 +198,7 @@
     .map-container img {
         display: block; height: 1000px; width: auto;
         user-select: none; -webkit-user-drag: none;
+        filter: grayscale(100%); /* Map in Schwarz-Weiß (optional) */
     }
 
     #markersArea {
@@ -202,19 +208,19 @@
 
     .marker {
         position: absolute; width: 11px; height: 11px;
-        background: #ffb7c5; border: 2px solid #fff; border-radius: 50%;
+        background: #cccccc; border: 2px solid #fff; border-radius: 50%;
         transform: translate(-50%, -50%);
         box-shadow: 0 0 10px rgba(0,0,0,0.8);
         cursor: pointer; z-index: 10; transition: transform 0.2s;
         pointer-events: auto;
     }
-    .marker:hover { transform: translate(-50%, -50%) scale(1.5); background: #ff6b6b; }
+    .marker:hover { transform: translate(-50%, -50%) scale(1.5); background: #ffffff; }
 
     .marker-label {
         position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
         background: rgba(0,0,0,0.9); color: white; padding: 4px 8px; 
         border-radius: 5px; font-size: 11px; white-space: nowrap; 
-        pointer-events: none; border: 1px solid #ffb7c5;
+        pointer-events: none; border: 1px solid #777777;
     }
 
     .modal-overlay {
@@ -227,55 +233,55 @@
 
     .close-btn {
         position: absolute; top: 20px; right: 25px; cursor: pointer; 
-        font-size: 1.5em; color: #ffb7c5; transition: 0.2s;
+        font-size: 1.5em; color: #aaaaaa; transition: 0.2s; /* Grau statt Pink */
     }
-    .close-btn:hover { color: #fff; transform: scale(1.1); }
+    .close-btn:hover { color: #ffffff; transform: scale(1.1); }
 
     .minimap-container {
-        width: 100%; height: 250px; border: 2px solid #ffb7c5; 
+        width: 100%; height: 250px; border: 2px solid #555555; 
         border-radius: 10px; overflow: hidden; position: relative; 
-        margin-top: 15px; margin-bottom: 20px; background: #1a1a2e; 
+        margin-top: 15px; margin-bottom: 20px; background: #111111; 
         display: flex; justify-content: center; align-items: center; color: #666; font-weight: bold;
     }
 
     #miniMapZoomFoto {
-        width: 100%; height: 100%; object-fit: cover; 
+        width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%);
     }
 
     .log-entry {
-        border-bottom: 1px solid #3e3e5e;
+        border-bottom: 1px solid #333333;
         padding: 10px 0;
         font-size: 0.95em;
     }
-    .log-time { color: #aaa; font-size: 0.85em; margin-right: 10px; }
-    .log-user { color: #ffb7c5; font-weight: bold; margin-right: 5px; }
-    .log-action { color: #5bc0de; font-weight: bold; margin-right: 5px; }
+    .log-time { color: #888888; font-size: 0.85em; margin-right: 10px; }
+    .log-user { color: #ffffff; font-weight: bold; margin-right: 5px; } /* Weiß statt Pink */
+    .log-action { color: #cccccc; font-weight: bold; margin-right: 5px; } /* Grau statt Blau */
 
     /* PREMIUM TIMER DESIGN */
     .craftItem {
         margin-top: 15px;
         padding: 20px;
-        background: linear-gradient(145deg, #1e1e2f, #2a2a40);
+        background: linear-gradient(145deg, #1a1a1a, #222222);
         border-radius: 15px;
-        border-left: 6px solid #77dd77; 
+        border-left: 6px solid #ffffff; /* Weiß statt Grün */
         text-align: left;
         display: flex;
         flex-direction: column;
         gap: 10px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.6);
         transition: transform 0.2s, border-color 0.3s;
     }
-    .craftItem.paused { border-left-color: #ffcc00; opacity: 0.9; }
+    .craftItem.paused { border-left-color: #666666; opacity: 0.9; } /* Grau statt Gelb */
     .craft-header { display: flex; justify-content: space-between; align-items: center; }
     .craft-title { font-size: 1.2em; font-weight: bold; color: #fff; }
-    .craft-user { font-size: 0.85em; color: #aaa; margin-top: 4px; }
-    .craft-time { font-size: 1.3em; font-weight: bold; color: #ffb7c5; font-family: monospace; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 8px; }
+    .craft-user { font-size: 0.85em; color: #888888; margin-top: 4px; }
+    .craft-time { font-size: 1.3em; font-weight: bold; color: #ffffff; font-family: monospace; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 8px; }
     .craft-controls { display: flex; justify-content: flex-end; gap: 10px; }
     .btn-icon { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.9em; }
-    .btn-pause { background: #ffcc00; color: #000; }
-    .btn-resume { background: #77dd77; color: #000; }
-    .btn-cancel { background: #ff6b6b; color: #fff; }
-    .btn-icon:hover { transform: scale(1.05); }
+    .btn-pause { background: #666666; color: #ffffff; } /* Grau statt Gelb */
+    .btn-resume { background: #dddddd; color: #000000; } /* Hellgrau statt Grün */
+    .btn-cancel { background: #333333; color: #ffffff; } /* Dunkelgrau statt Rot */
+    .btn-icon:hover { transform: scale(1.05); filter: brightness(1.2); }
 
     /* SCHWARZMARKT (SHOP) DESIGN */
     .shop-grid {
@@ -285,15 +291,15 @@
         margin-top: 20px;
     }
     .shop-card {
-        background: #2a2a2a; 
-        border: 1px solid #444;
+        background: #1a1a1a; 
+        border: 1px solid #333333;
         position: relative;
         padding: 15px;
         display: flex;
         flex-direction: column;
         height: 220px;
         justify-content: space-between;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.8);
     }
     .shop-card::before {
         content: "";
@@ -310,7 +316,7 @@
         z-index: 1;
     }
     .shop-limit {
-        background: #fff;
+        background: #dddddd;
         color: #000;
         padding: 4px 8px;
         font-weight: bold;
@@ -320,7 +326,7 @@
         gap: 5px;
     }
     .shop-price {
-        background: #66bb6a; 
+        background: #444444; /* Grau statt Grün */
         color: #fff;
         padding: 4px 8px;
         font-weight: bold;
@@ -328,12 +334,14 @@
         display: flex;
         align-items: center;
         gap: 5px;
+        border: 1px solid #555555;
     }
     .shop-mid {
         font-size: 5em;
         text-align: center;
         z-index: 1;
         filter: drop-shadow(2px 4px 6px black);
+        color: #ffffff;
     }
     .shop-bottom {
         display: flex;
@@ -350,12 +358,12 @@
         color: #fff;
     }
     .shop-cat {
-        color: #999;
+        color: #777777;
         font-size: 0.8em;
     }
     .shop-buy {
-        background: #66bb6a;
-        color: white;
+        background: #dddddd; /* Hellgrau statt Grün */
+        color: #121212;
         padding: 8px;
         border-radius: 4px;
         cursor: pointer;
@@ -363,9 +371,10 @@
         align-items: center;
         justify-content: center;
         transition: 0.2s;
+        font-weight: bold;
     }
     .shop-buy:hover {
-        background: #5cad5e;
+        background: #ffffff;
         transform: scale(1.1);
     }
 
