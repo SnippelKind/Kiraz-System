@@ -24,7 +24,7 @@
     h1 {
         font-size: 3em;
         margin-top: 50px;
-        color: #ffffff; /* Weiß statt Pink */
+        color: #ffffff;
         text-shadow: 0 0 20px rgba(255, 255, 255, 0.3), 2px 2px 5px rgba(0,0,0,0.8);
     }
 
@@ -45,7 +45,7 @@
         top: 20px;
         left: 20px;
         background: rgba(15, 15, 15, 0.95);
-        border: 1px solid #555555; /* Grauer Rahmen */
+        border: 1px solid #555555;
         padding: 10px 20px;
         border-radius: 12px;
         color: white;
@@ -67,7 +67,7 @@
     }
 
     .route-card {
-        background: linear-gradient(145deg, #2a2a2a, #1a1a1a); /* Grauverlauf */
+        background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
         border-radius: 20px;
         overflow: hidden;
         cursor: pointer;
@@ -83,7 +83,7 @@
 
     .route-card:hover {
         transform: scale(1.05);
-        border-color: #ffffff; /* Weißer Hover-Rahmen */
+        border-color: #ffffff;
         box-shadow: 0 15px 35px rgba(255, 255, 255, 0.15);
     }
 
@@ -98,8 +98,8 @@
     .route-card img {
         position: absolute; top: 0; left: 0;
         width: 100%; height: 100%; object-fit: cover;
-        display: block; opacity: 0.6; transition: 0.3s; z-index: 2; /* Etwas dunkler */
-        filter: grayscale(80%); /* Bilder leicht entsättigen für den Look */
+        display: block; opacity: 0.6; transition: 0.3s; z-index: 2;
+        filter: grayscale(80%);
     }
     .route-card:hover img { opacity: 0.9; filter: grayscale(0%); }
 
@@ -114,7 +114,7 @@
     .tabs { margin-top: 30px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
     .tabs button, .btn-home, .btn-danger, .btn-edit {
         padding: 15px 30px; border: none; border-radius: 12px;
-        background: #cccccc; /* Helles Grau statt Pink */
+        background: #cccccc;
         cursor: pointer; font-weight: bold;
         transition: 0.3s; color: #121212; text-transform: uppercase;
         box-shadow: 0 5px 15px rgba(0,0,0,0.5);
@@ -123,10 +123,10 @@
 
     .btn-home { position: fixed; top: 80px; left: 20px; z-index: 100; padding: 10px 20px; }
 
-    .btn-danger { background: #444444; color: white; margin-top: 20px; width: 100%; } /* Dunkelgrau statt Rot */
+    .btn-danger { background: #444444; color: white; margin-top: 20px; width: 100%; }
     .btn-danger:hover { background: #666666; }
     
-    .btn-edit { background: #777777; color: white; width: 100%; margin-bottom: 10px; } /* Mittelgrau statt Blau */
+    .btn-edit { background: #777777; color: white; width: 100%; margin-bottom: 10px; }
     .btn-edit:hover { background: #999999; }
 
     .box {
@@ -151,7 +151,7 @@
         border: 1px solid rgba(255,255,255,0.1);
     }
 
-    .progress { height: 100%; background: linear-gradient(90deg, #dddddd, #888888); width: 0%; transition: width 0.5s ease; } /* Grau/Weiß statt Grün */
+    .progress { height: 100%; background: linear-gradient(90deg, #dddddd, #888888); width: 0%; transition: width 0.5s ease; }
 
     .result { margin-top: 15px; font-weight: bold; font-size: 1.1em; color: #ffffff; }
 
@@ -184,7 +184,7 @@
     .legend-item {
         background: rgba(255, 255, 255, 0.05); padding: 12px; margin-bottom: 10px;
         border-radius: 8px; cursor: pointer; transition: 0.2s; 
-        border-left: 4px solid #ffffff; font-size: 0.95em; text-align: left; color: #dddddd; /* Weißer Balken statt Pink */
+        border-left: 4px solid #ffffff; font-size: 0.95em; text-align: left; color: #dddddd;
     }
     .legend-item:hover { background: rgba(255, 255, 255, 0.1); color: #fff; transform: translateX(5px); }
 
@@ -198,7 +198,7 @@
     .map-container img {
         display: block; height: 1000px; width: auto;
         user-select: none; -webkit-user-drag: none;
-        filter: grayscale(100%); /* Map in Schwarz-Weiß (optional) */
+        filter: grayscale(100%);
     }
 
     #markersArea {
@@ -233,7 +233,7 @@
 
     .close-btn {
         position: absolute; top: 20px; right: 25px; cursor: pointer; 
-        font-size: 1.5em; color: #aaaaaa; transition: 0.2s; /* Grau statt Pink */
+        font-size: 1.5em; color: #aaaaaa; transition: 0.2s;
     }
     .close-btn:hover { color: #ffffff; transform: scale(1.1); }
 
@@ -254,16 +254,15 @@
         font-size: 0.95em;
     }
     .log-time { color: #888888; font-size: 0.85em; margin-right: 10px; }
-    .log-user { color: #ffffff; font-weight: bold; margin-right: 5px; } /* Weiß statt Pink */
-    .log-action { color: #cccccc; font-weight: bold; margin-right: 5px; } /* Grau statt Blau */
+    .log-user { color: #ffffff; font-weight: bold; margin-right: 5px; }
+    .log-action { color: #cccccc; font-weight: bold; margin-right: 5px; }
 
-    /* PREMIUM TIMER DESIGN */
     .craftItem {
         margin-top: 15px;
         padding: 20px;
         background: linear-gradient(145deg, #1a1a1a, #222222);
         border-radius: 15px;
-        border-left: 6px solid #ffffff; /* Weiß statt Grün */
+        border-left: 6px solid #ffffff;
         text-align: left;
         display: flex;
         flex-direction: column;
@@ -271,19 +270,18 @@
         box-shadow: 0 5px 15px rgba(0,0,0,0.6);
         transition: transform 0.2s, border-color 0.3s;
     }
-    .craftItem.paused { border-left-color: #666666; opacity: 0.9; } /* Grau statt Gelb */
+    .craftItem.paused { border-left-color: #666666; opacity: 0.9; }
     .craft-header { display: flex; justify-content: space-between; align-items: center; }
     .craft-title { font-size: 1.2em; font-weight: bold; color: #fff; }
     .craft-user { font-size: 0.85em; color: #888888; margin-top: 4px; }
     .craft-time { font-size: 1.3em; font-weight: bold; color: #ffffff; font-family: monospace; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 8px; }
     .craft-controls { display: flex; justify-content: flex-end; gap: 10px; }
     .btn-icon { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.9em; }
-    .btn-pause { background: #666666; color: #ffffff; } /* Grau statt Gelb */
-    .btn-resume { background: #dddddd; color: #000000; } /* Hellgrau statt Grün */
-    .btn-cancel { background: #333333; color: #ffffff; } /* Dunkelgrau statt Rot */
+    .btn-pause { background: #666666; color: #ffffff; }
+    .btn-resume { background: #dddddd; color: #000000; }
+    .btn-cancel { background: #333333; color: #ffffff; }
     .btn-icon:hover { transform: scale(1.05); filter: brightness(1.2); }
 
-    /* SCHWARZMARKT (SHOP) DESIGN */
     .shop-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -326,7 +324,7 @@
         gap: 5px;
     }
     .shop-price {
-        background: #444444; /* Grau statt Grün */
+        background: #444444;
         color: #fff;
         padding: 4px 8px;
         font-weight: bold;
@@ -362,7 +360,7 @@
         font-size: 0.8em;
     }
     .shop-buy {
-        background: #dddddd; /* Hellgrau statt Grün */
+        background: #dddddd;
         color: #121212;
         padding: 8px;
         border-radius: 4px;
@@ -376,6 +374,18 @@
     .shop-buy:hover {
         background: #ffffff;
         transform: scale(1.1);
+    }
+
+    /* Neu: Container für Stat-Zusammenfassung */
+    .stat-box {
+        margin-top: 15px; 
+        padding: 12px; 
+        background: rgba(0,0,0,0.4); 
+        border: 1px solid #444; 
+        border-radius: 10px; 
+        color: #ddd; 
+        font-size: 0.95em;
+        display: none;
     }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
@@ -545,6 +555,7 @@
         </select>
         <input type="number" id="craftAmount" placeholder="Anzahl der Waffen..." min="1" oninput="checkCraft();">
         <div id="inputs"></div>
+        <div id="craftStats" class="stat-box"></div>
         <p id="result" class="result">Bitte Waffe wählen</p>
         <button id="startBtn" class="btn-action" onclick="createCraft()" style="display:none;">▶ Produktion starten</button>
     </div>
@@ -561,6 +572,7 @@
         </select>
         <input type="number" id="ephiAmount" placeholder="Anzahl der Durchläufe..." min="1" oninput="checkEphiCraft();">
         <div id="ephiInputs"></div>
+        <div id="ephiStats" class="stat-box"></div>
         <p id="ephiResult" class="result">Bitte Prozess wählen</p>
         <button id="ephiStartBtn" class="btn-action" onclick="createEphiCraft()" style="display:none;">▶ Produktion starten</button>
     </div>
@@ -575,6 +587,7 @@
         </select>
         <input type="number" id="kokainAmount" placeholder="Anzahl der Durchläufe..." min="1" oninput="checkKokainCraft();">
         <div id="kokainInputs"></div>
+        <div id="kokainStats" class="stat-box"></div>
         <p id="kokainResult" class="result">Bitte Prozess wählen</p>
         <button id="kokainStartBtn" class="btn-action" onclick="createKokainCraft()" style="display:none;">▶ Produktion starten</button>
     </div>
@@ -589,6 +602,7 @@
         </select>
         <input type="number" id="methAmount" placeholder="Anzahl der Durchläufe..." min="1" oninput="checkMethCraft();">
         <div id="methInputs"></div>
+        <div id="methStats" class="stat-box"></div>
         <p id="methResult" class="result">Bitte Prozess wählen</p>
         <button id="methStartBtn" class="btn-action" onclick="createMethCraft()" style="display:none;">▶ Produktion starten</button>
     </div>
@@ -603,6 +617,7 @@
         </select>
         <input type="number" id="ecstasyAmount" placeholder="Anzahl der Durchläufe..." min="1" oninput="checkEcstasyCraft();">
         <div id="ecstasyInputs"></div>
+        <div id="ecstasyStats" class="stat-box"></div>
         <p id="ecstasyResult" class="result">Bitte Prozess wählen</p>
         <button id="ecstasyStartBtn" class="btn-action" onclick="createEcstasyCraft()" style="display:none;">▶ Produktion starten</button>
     </div>
@@ -618,6 +633,7 @@
         </select>
         <input type="number" id="westenAmount" placeholder="Anzahl der Westen..." min="1" oninput="checkWestenCraft();">
         <div id="westenInputs"></div>
+        <div id="westenStats" class="stat-box"></div>
         <p id="westenResult" class="result">Bitte Weste wählen</p>
         <button id="westenStartBtn" class="btn-action" onclick="createWestenCraft()" style="display:none;">▶ Produktion starten</button>
     </div>
@@ -633,6 +649,7 @@
         </select>
         <input type="number" id="munitionAmount" placeholder="Anzahl der Magazine..." min="1" oninput="checkMunitionCraft();">
         <div id="munitionInputs"></div>
+        <div id="munitionStats" class="stat-box"></div>
         <p id="munitionResult" class="result">Bitte Magazin wählen</p>
         <button id="munitionStartBtn" class="btn-action" onclick="createMunitionCraft()" style="display:none;">▶ Produktion starten</button>
     </div>
@@ -725,6 +742,93 @@ const db = firebase.firestore();
 
 let currentUser = "Unbekannt"; 
 let isUserAdmin = false; 
+
+// --- NEU: MATERIAL DATENBANK (GEWICHT & SAMMELZEIT) ---
+// Hier kannst du die Werte für jedes Item im Spiel exakt eintragen!
+const materialDaten = {
+    // Ephi Route
+    "Frosch": { weight: 1.0, gatherAmount: 12, gatherTimeMin: 1 },
+    "Froschhaut": { weight: 0.1 }, 
+    "Ephi Extrakt": { weight: 0.05 },
+    "Ephi": { weight: 0.02 },
+
+    // Kokain Route (Beispielwerte)
+    "Kokain Blätter": { weight: 0.5, gatherAmount: 15, gatherTimeMin: 1 },
+    "Benzin": { weight: 2.0, gatherAmount: 5, gatherTimeMin: 1 },
+    "Methanol": { weight: 1.0, gatherAmount: 8, gatherTimeMin: 1 },
+    "Kokain": { weight: 0.05 },
+
+    // Meth Route (Beispielwerte)
+    "Natronlauge": { weight: 1.0, gatherAmount: 10, gatherTimeMin: 1 },
+    "Lithiumfolie": { weight: 0.2, gatherAmount: 20, gatherTimeMin: 1 },
+    "Ammoniumnitrat": { weight: 1.5, gatherAmount: 6, gatherTimeMin: 1 },
+    "Meth": { weight: 0.05 },
+
+    // Ecstasy Route (Beispielwerte)
+    "Koffeinpulver": { weight: 0.5, gatherAmount: 15, gatherTimeMin: 1 },
+    "Nitroethan": { weight: 1.0, gatherAmount: 10, gatherTimeMin: 1 },
+    "Methylamin": { weight: 1.0, gatherAmount: 10, gatherTimeMin: 1 },
+    "Ecstasy": { weight: 0.02 },
+
+    // Westen Route (Beispielwerte)
+    "Baumwolle": { weight: 0.2, gatherAmount: 20, gatherTimeMin: 1 },
+    "Polyethylenplatten": { weight: 2.5, gatherAmount: 3, gatherTimeMin: 1 },
+
+    // Munition Route (Beispielwerte)
+    "Zündladungen": { weight: 0.01, gatherAmount: 40, gatherTimeMin: 1 },
+    "Projektil": { weight: 0.02, gatherAmount: 40, gatherTimeMin: 1 },
+    "Patronenhülsen": { weight: 0.02, gatherAmount: 40, gatherTimeMin: 1 },
+
+    // Waffen & Schmelzofen
+    "Waffenrahmen": { weight: 1.5 },
+    "Schlagbolzen": { weight: 0.1 },
+    "Riegel": { weight: 0.3 },
+    "Erz": { weight: 3.0, gatherAmount: 5, gatherTimeMin: 1 },
+    "Metall": { weight: 1.5 },
+    "Bargeld": { weight: 0.0 }
+};
+
+// Hilfsfunktion: Bereitet den Info-Text für Inputs vor
+function getMaterialInfoText(matName) {
+    if (!materialDaten[matName]) return "";
+    let data = materialDaten[matName];
+    let w = data.weight ? `${data.weight} kg` : "";
+    let g = data.gatherAmount ? ` | Farmen: ${data.gatherAmount}x in ${data.gatherTimeMin} Min.` : "";
+    return ` <span style="color:#888; font-size:0.85em;">(${w}${g})</span>`;
+}
+
+// Hilfsfunktion: Berechnet und zeigt die Stats-Zusammenfassung an
+function updateCraftStats(dataMats, amount, statsDivId) {
+    let statsDiv = document.getElementById(statsDivId);
+    if (!statsDiv) return;
+
+    let totalWeight = 0;
+    let totalGatherTime = 0;
+    let requiredGathering = false; // Checkt ob überhaupt was gesammelt werden muss
+
+    for (let t in dataMats) {
+        let need = dataMats[t] * amount;
+        if(materialDaten[t]) {
+            if(materialDaten[t].weight) totalWeight += need * materialDaten[t].weight;
+            
+            if(materialDaten[t].gatherAmount && materialDaten[t].gatherTimeMin) {
+                requiredGathering = true;
+                // Berechnet wie viele Zyklen gefarmt werden müssen (aufgerundet)
+                let cycles = Math.ceil(need / materialDaten[t].gatherAmount);
+                totalGatherTime += cycles * materialDaten[t].gatherTimeMin;
+            }
+        }
+    }
+
+    if (totalWeight > 0 || requiredGathering) {
+        let timeInfo = requiredGathering ? `<br>⏱️ <b>Benötigte Sammelzeit:</b> ca. ${totalGatherTime} Min.` : "";
+        statsDiv.innerHTML = `⚖️ <b>Benötigtes Gewicht:</b> ${totalWeight.toFixed(2)} kg ${timeInfo}`;
+        statsDiv.style.display = "block";
+    } else {
+        statsDiv.style.display = "none";
+    }
+}
+
 
 // --- ONLINE HEARTBEAT ---
 function updateOnlineStatus() {
@@ -891,10 +995,11 @@ function loadRecipe() {
     const inputs = document.getElementById("inputs"); inputs.innerHTML = "";
     let item = document.getElementById("itemSelect").value;
     let data = rezepte[item];
-    if (!data) return;
+    if (!data) { document.getElementById("craftStats").style.display = "none"; return; }
     for (let t in data.mats) {
         let icon = (t === "Bargeld") ? "💰" : "📦";
-        inputs.innerHTML += `<div class="material">${icon} ${t}: <input id="${t}" type="number" placeholder="Vorhanden..." oninput="checkCraft()"></div>`;
+        let info = getMaterialInfoText(t);
+        inputs.innerHTML += `<div class="material"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${icon} ${t}</span>${info}</div><input id="${t}" type="number" placeholder="Vorhanden..." oninput="checkCraft()"></div>`;
     }
     checkCraft();
 }
@@ -904,7 +1009,15 @@ function checkCraft() {
     let data = rezepte[item];
     let result = document.getElementById("result");
     let startBtn = document.getElementById("startBtn");
-    if (!data) { result.innerText = "Bitte Waffe wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+
+    if (!data) { 
+        result.innerText = "Bitte Waffe wählen"; result.style.color = "white"; startBtn.style.display = "none"; 
+        document.getElementById("craftStats").style.display = "none";
+        return; 
+    }
+
+    updateCraftStats(data.mats, amount, "craftStats");
+
     let fehlend = [];
     for (let t in data.mats) {
         let need = data.mats[t] * amount; let have = parseInt(document.getElementById(t)?.value) || 0;
@@ -929,17 +1042,26 @@ function loadEphiRecipe() {
     const inputs = document.getElementById("ephiInputs"); inputs.innerHTML = "";
     let item = document.getElementById("ephiSelect").value;
     let data = ephiRezepte[item];
-    if (!data) return;
+    if (!data) { document.getElementById("ephiStats").style.display = "none"; return; }
     for (let t in data.mats) {
         let icon = (t === "Frosch") ? "🐸" : "🧪";
-        inputs.innerHTML += `<div class="material">${icon} ${t}: <input id="ephi_${t}" type="number" placeholder="Vorhanden..." oninput="checkEphiCraft()"></div>`;
+        let info = getMaterialInfoText(t);
+        inputs.innerHTML += `<div class="material"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${icon} ${t}</span>${info}</div><input id="ephi_${t}" type="number" placeholder="Vorhanden..." oninput="checkEphiCraft()"></div>`;
     }
     checkEphiCraft();
 }
 function checkEphiCraft() {
     let item = document.getElementById("ephiSelect").value; let amount = parseInt(document.getElementById("ephiAmount").value) || 1;
     let data = ephiRezepte[item]; let result = document.getElementById("ephiResult"); let startBtn = document.getElementById("ephiStartBtn");
-    if (!data) { result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+    
+    if (!data) { 
+        result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; 
+        document.getElementById("ephiStats").style.display = "none";
+        return; 
+    }
+
+    updateCraftStats(data.mats, amount, "ephiStats");
+
     let fehlend = [];
     for (let t in data.mats) {
         let need = data.mats[t] * amount; let have = parseInt(document.getElementById("ephi_" + t)?.value) || 0;
@@ -961,17 +1083,26 @@ function loadKokainRecipe() {
     const inputs = document.getElementById("kokainInputs"); inputs.innerHTML = "";
     let item = document.getElementById("kokainSelect").value;
     let data = kokainRezepte[item];
-    if (!data) return;
+    if (!data) { document.getElementById("kokainStats").style.display = "none"; return; }
     for (let t in data.mats) {
         let icon = (t === "Kokain Blätter") ? "🌿" : (t === "Benzin" ? "🛢️" : "🧪");
-        inputs.innerHTML += `<div class="material">${icon} ${t}: <input id="kokain_${t}" type="number" placeholder="Vorhanden..." oninput="checkKokainCraft()"></div>`;
+        let info = getMaterialInfoText(t);
+        inputs.innerHTML += `<div class="material"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${icon} ${t}</span>${info}</div><input id="kokain_${t}" type="number" placeholder="Vorhanden..." oninput="checkKokainCraft()"></div>`;
     }
     checkKokainCraft();
 }
 function checkKokainCraft() {
     let item = document.getElementById("kokainSelect").value; let amount = parseInt(document.getElementById("kokainAmount").value) || 1;
     let data = kokainRezepte[item]; let result = document.getElementById("kokainResult"); let startBtn = document.getElementById("kokainStartBtn");
-    if (!data) { result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+    
+    if (!data) { 
+        result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; 
+        document.getElementById("kokainStats").style.display = "none";
+        return; 
+    }
+
+    updateCraftStats(data.mats, amount, "kokainStats");
+
     let fehlend = [];
     for (let t in data.mats) {
         let need = data.mats[t] * amount; let have = parseInt(document.getElementById("kokain_" + t)?.value) || 0;
@@ -993,16 +1124,25 @@ function loadMethRecipe() {
     const inputs = document.getElementById("methInputs"); inputs.innerHTML = "";
     let item = document.getElementById("methSelect").value;
     let data = methRezepte[item];
-    if (!data) return;
+    if (!data) { document.getElementById("methStats").style.display = "none"; return; }
     for (let t in data.mats) {
-        inputs.innerHTML += `<div class="material">🧪 ${t}: <input id="meth_${t}" type="number" placeholder="Vorhanden..." oninput="checkMethCraft()"></div>`;
+        let info = getMaterialInfoText(t);
+        inputs.innerHTML += `<div class="material"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>🧪 ${t}</span>${info}</div><input id="meth_${t}" type="number" placeholder="Vorhanden..." oninput="checkMethCraft()"></div>`;
     }
     checkMethCraft();
 }
 function checkMethCraft() {
     let item = document.getElementById("methSelect").value; let amount = parseInt(document.getElementById("methAmount").value) || 1;
     let data = methRezepte[item]; let result = document.getElementById("methResult"); let startBtn = document.getElementById("methStartBtn");
-    if (!data) { result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+    
+    if (!data) { 
+        result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; 
+        document.getElementById("methStats").style.display = "none";
+        return; 
+    }
+
+    updateCraftStats(data.mats, amount, "methStats");
+
     let fehlend = [];
     for (let t in data.mats) {
         let need = data.mats[t] * amount; let have = parseInt(document.getElementById("meth_" + t)?.value) || 0;
@@ -1024,16 +1164,25 @@ function loadEcstasyRecipe() {
     const inputs = document.getElementById("ecstasyInputs"); inputs.innerHTML = "";
     let item = document.getElementById("ecstasySelect").value;
     let data = ecstasyRezepte[item];
-    if (!data) return;
+    if (!data) { document.getElementById("ecstasyStats").style.display = "none"; return; }
     for (let t in data.mats) {
-        inputs.innerHTML += `<div class="material">🧪 ${t}: <input id="ecstasy_${t}" type="number" placeholder="Vorhanden..." oninput="checkEcstasyCraft()"></div>`;
+        let info = getMaterialInfoText(t);
+        inputs.innerHTML += `<div class="material"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>🧪 ${t}</span>${info}</div><input id="ecstasy_${t}" type="number" placeholder="Vorhanden..." oninput="checkEcstasyCraft()"></div>`;
     }
     checkEcstasyCraft();
 }
 function checkEcstasyCraft() {
     let item = document.getElementById("ecstasySelect").value; let amount = parseInt(document.getElementById("ecstasyAmount").value) || 1;
     let data = ecstasyRezepte[item]; let result = document.getElementById("ecstasyResult"); let startBtn = document.getElementById("ecstasyStartBtn");
-    if (!data) { result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+    
+    if (!data) { 
+        result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; 
+        document.getElementById("ecstasyStats").style.display = "none";
+        return; 
+    }
+
+    updateCraftStats(data.mats, amount, "ecstasyStats");
+
     let fehlend = [];
     for (let t in data.mats) {
         let need = data.mats[t] * amount; let have = parseInt(document.getElementById("ecstasy_" + t)?.value) || 0;
@@ -1055,17 +1204,26 @@ function loadWestenRecipe() {
     const inputs = document.getElementById("westenInputs"); inputs.innerHTML = "";
     let item = document.getElementById("westenSelect").value;
     let data = westenRezepte[item];
-    if (!data) return;
+    if (!data) { document.getElementById("westenStats").style.display = "none"; return; }
     for (let t in data.mats) {
         let icon = (t === "Baumwolle") ? "🧵" : "🔲";
-        inputs.innerHTML += `<div class="material">${icon} ${t}: <input id="westen_${t}" type="number" placeholder="Vorhanden..." oninput="checkWestenCraft()"></div>`;
+        let info = getMaterialInfoText(t);
+        inputs.innerHTML += `<div class="material"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${icon} ${t}</span>${info}</div><input id="westen_${t}" type="number" placeholder="Vorhanden..." oninput="checkWestenCraft()"></div>`;
     }
     checkWestenCraft();
 }
 function checkWestenCraft() {
     let item = document.getElementById("westenSelect").value; let amount = parseInt(document.getElementById("westenAmount").value) || 1;
     let data = westenRezepte[item]; let result = document.getElementById("westenResult"); let startBtn = document.getElementById("westenStartBtn");
-    if (!data) { result.innerText = "Bitte Weste wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+    
+    if (!data) { 
+        result.innerText = "Bitte Weste wählen"; result.style.color = "white"; startBtn.style.display = "none"; 
+        document.getElementById("westenStats").style.display = "none";
+        return; 
+    }
+
+    updateCraftStats(data.mats, amount, "westenStats");
+
     let fehlend = [];
     for (let t in data.mats) {
         let need = data.mats[t] * amount; let have = parseInt(document.getElementById("westen_" + t)?.value) || 0;
@@ -1087,16 +1245,25 @@ function loadMunitionRecipe() {
     const inputs = document.getElementById("munitionInputs"); inputs.innerHTML = "";
     let item = document.getElementById("munitionSelect").value;
     let data = munitionRezepte[item];
-    if (!data) return;
+    if (!data) { document.getElementById("munitionStats").style.display = "none"; return; }
     for (let t in data.mats) {
-        inputs.innerHTML += `<div class="material">💥 ${t}: <input id="munition_${t}" type="number" placeholder="Vorhanden..." oninput="checkMunitionCraft()"></div>`;
+        let info = getMaterialInfoText(t);
+        inputs.innerHTML += `<div class="material"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>💥 ${t}</span>${info}</div><input id="munition_${t}" type="number" placeholder="Vorhanden..." oninput="checkMunitionCraft()"></div>`;
     }
     checkMunitionCraft();
 }
 function checkMunitionCraft() {
     let item = document.getElementById("munitionSelect").value; let amount = parseInt(document.getElementById("munitionAmount").value) || 1;
     let data = munitionRezepte[item]; let result = document.getElementById("munitionResult"); let startBtn = document.getElementById("munitionStartBtn");
-    if (!data) { result.innerText = "Bitte Magazin wählen"; result.style.color = "white"; startBtn.style.display = "none"; return; }
+    
+    if (!data) { 
+        result.innerText = "Bitte Magazin wählen"; result.style.color = "white"; startBtn.style.display = "none"; 
+        document.getElementById("munitionStats").style.display = "none";
+        return; 
+    }
+
+    updateCraftStats(data.mats, amount, "munitionStats");
+
     let fehlend = [];
     for (let t in data.mats) {
         let need = data.mats[t] * amount; let have = parseInt(document.getElementById("munition_" + t)?.value) || 0;
