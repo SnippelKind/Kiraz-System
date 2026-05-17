@@ -1088,28 +1088,38 @@ function autoCleanupDatabase() {
     // Nur Administratoren und Leader dürfen den Bereinigungsprozess auslösen
     if (!isUserLeader && !isUserAdmin) return;
 
-    fetch('/api/faction-members')
-        .then(res => res.json())
-        .then(members => {
-            if(!Array.isArray(members)) return;
+ fetch('/api/user')
+    .then(response => response.json())
+    .then(data => {
+        if(data.username) {
+            currentUser = data.username; 
             
-            // Wir speichern alle aktuell gültigen Namen und IDs
-            const validUsernames = members.map(m => m.name);
-            const validIds = members.map(m => m.id);
+            document.getElementById('userNameDisplay').innerText = data.username;
+            document.getElementById('userProfile').style.display = "flex";
+            
+            if(data.isAdmin) {
+                isUserAdmin = true; 
+                document.getElementById('deleteAllBtn').style.display = "block";
+                document.getElementById('deleteSingleBtn').style.display = "block";
+                document.getElementById('editSingleBtn').style.display = "block"; 
+                document.getElementById('logBtn').style.display = "inline-block"; 
+            }
 
-            // 1. Spinde aufräumen (Hier ist die Dokument-ID der Discord-Name)
-            db.collection("lockers").get().then(snapshot => {
-                snapshot.forEach(doc => {
-                    // Wenn der Name des Spinds NICHT mehr in der Discord-Liste ist:
-                    if (!validUsernames.includes(doc.id)) {
-                        db.collection("lockers").doc(doc.id).delete()
-                            .then(() => {
-                                console.log(`Veralteter Spind von ${doc.id} wurde gelöscht.`);
-                                addLog("System Cleanup", `Spind von ${doc.id} entfernt (Mitglied hat Fraktion verlassen)`);
-                            });
-                    }
-                });
-            });
+            if(data.isLeader) {
+                isUserLeader = true;
+                document.getElementById('checklistBtn').style.display = "inline-block";
+                initChecklist(); 
+            }
+            
+            updateOnlineStatus();
+
+            // NEU: Wenn der User Admin oder Leader ist, starte den Aufräum-Prozess nach 3 Sekunden
+            if (isUserAdmin || isUserLeader) {
+                setTimeout(autoCleanupDatabase, 3000); 
+            }
+        }
+    })
+    .catch(error => console.log("Fehler beim Laden des Users:", error));
 
             // 2. Checklisten aufräumen (Hier ist die Dokument-ID die Discord-ID)
             db.collection("checklist").get().then(snapshot => {
