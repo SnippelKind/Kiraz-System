@@ -93,7 +93,7 @@ function updateOnlineStatus() {
 }
 setInterval(updateOnlineStatus, 10000);
 
-b.collection("online").onSnapshot((snapshot) => {
+db.collection("online").onSnapshot((snapshot) => {
     const list = document.getElementById("onlineList");
     const countBtn = document.getElementById("onlineCountBtn");
     if(!list || !countBtn) return;
@@ -139,10 +139,6 @@ b.collection("online").onSnapshot((snapshot) => {
     });
 
     list.innerHTML = listHtml === "" ? "<p style='color:#aaa; text-align:center;'>Aktuell ist niemand online.</p>" : listHtml;
-    countBtn.innerText = `👥 Mitglieder (${onlineCount})`;
-});
-
-    list.innerHTML = members.length === 0 ? "<p style='color:#aaa; text-align:center;'>Noch keine Daten.</p>" : listHtml;
     countBtn.innerText = `👥 Mitglieder (${onlineCount})`;
 });
 
@@ -385,7 +381,7 @@ function populateSpindUserSelect() {
     
     select.innerHTML = `<option value="${currentUser}">Mein eigener Spind</option>`;
     
-    fetch('/api/faction-members')
+    fetch('/api/faction-members?t=' + Date.now())
         .then(res => res.json())
         .then(members => {
             if(Array.isArray(members)) {
