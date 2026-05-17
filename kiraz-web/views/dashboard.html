@@ -1888,4 +1888,26 @@ fetch('/api/user')
             currentUser = data.username; 
             
             document.getElementById('userNameDisplay').innerText = data.username;
-            document.getElementById('userProfile').style.
+            document.getElementById('userProfile').style.display = "flex";
+            
+            if(data.isAdmin) {
+                isUserAdmin = true; 
+                document.getElementById('deleteAllBtn').style.display = "block";
+                document.getElementById('deleteSingleBtn').style.display = "block";
+                document.getElementById('editSingleBtn').style.display = "block"; 
+                document.getElementById('logBtn').style.display = "inline-block"; 
+            }
+
+            if(data.isLeader) {
+                isUserLeader = true;
+                document.getElementById('checklistBtn').style.display = "inline-block";
+                initChecklist(); 
+            }
+            
+            updateOnlineStatus();
+        }
+    })
+    .catch(error => console.log("Fehler beim Laden des Users:", error));
+</script>
+</body>
+</html>
