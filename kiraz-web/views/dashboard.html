@@ -755,12 +755,12 @@
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyDO4axgbMlOp_WFtPZuahNh_glJZXbSBZQ",
-  authDomain: "kiraz-software.firebaseapp.com",
-  projectId: "kiraz-software",
-  storageBucket: "kiraz-software.firebasestorage.app",
-  messagingSenderId: "1043597215258",
-  appId: "1:1043597215258:web:6d91bcbb42ec2918ba33a3"
+    apiKey: "AIzaSyDO4axgbMlOp_WFtPZuahNh_glJZXbSBZQ",
+    authDomain: "kiraz-software.firebaseapp.com",
+    projectId: "kiraz-software",
+    storageBucket: "kiraz-software.firebasestorage.app",
+    messagingSenderId: "1043597215258",
+    appId: "1:1043597215258:web:6d91bcbb42ec2918ba33a3"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -976,7 +976,7 @@ function showDashboard() {
     document.getElementById('munitionTab').style.display = "none";
     document.getElementById('geldwaescheTab').style.display = "none"; 
     document.getElementById('schwarzmarktTab').style.display = "none"; 
-    document.getElementById('spindTab').style.display = "none"; // Spind verstecken
+    document.getElementById('spindTab').style.display = "none";
     document.getElementById('checklistTab').style.display = "none";
     document.getElementById('timerTab').style.display = "none";
     document.getElementById('smeltTab').style.display = "none";
@@ -1001,7 +1001,6 @@ function openSpindTab() {
     currentSpindViewUser = currentUser;
     document.getElementById('spindTitle').innerText = "Mein Spind (" + currentUser + ")";
     
-    // Prüfe ob User Admin/Leader ist
     if (isUserAdmin || isUserLeader) {
         document.getElementById('spindAdminView').style.display = "block";
         populateSpindUserSelect();
@@ -1085,46 +1084,30 @@ function updateSpindItem(action) {
 
 // --- AUTO-CLEANUP LOGIK (Löscht veraltete User) ---
 function autoCleanupDatabase() {
-    // Nur Administratoren und Leader dürfen den Bereinigungsprozess auslösen
     if (!isUserLeader && !isUserAdmin) return;
 
- fetch('/api/user')
-    .then(response => response.json())
-    .then(data => {
-        if(data.username) {
-            currentUser = data.username; 
+    fetch('/api/faction-members')
+        .then(res => res.json())
+        .then(members => {
+            if(!Array.isArray(members)) return;
             
-            document.getElementById('userNameDisplay').innerText = data.username;
-            document.getElementById('userProfile').style.display = "flex";
-            
-            if(data.isAdmin) {
-                isUserAdmin = true; 
-                document.getElementById('deleteAllBtn').style.display = "block";
-                document.getElementById('deleteSingleBtn').style.display = "block";
-                document.getElementById('editSingleBtn').style.display = "block"; 
-                document.getElementById('logBtn').style.display = "inline-block"; 
-            }
+            const validUsernames = members.map(m => m.name);
+            const validIds = members.map(m => m.id);
 
-            if(data.isLeader) {
-                isUserLeader = true;
-                document.getElementById('checklistBtn').style.display = "inline-block";
-                initChecklist(); 
-            }
-            
-            updateOnlineStatus();
+            db.collection("lockers").get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    if (!validUsernames.includes(doc.id)) {
+                        db.collection("lockers").doc(doc.id).delete()
+                            .then(() => {
+                                console.log(`Veralteter Spind von ${doc.id} wurde gelöscht.`);
+                                addLog("System Cleanup", `Spind von ${doc.id} entfernt (Mitglied hat Fraktion verlassen)`);
+                            });
+                    }
+                });
+            });
 
-            // NEU: Wenn der User Admin oder Leader ist, starte den Aufräum-Prozess nach 3 Sekunden
-            if (isUserAdmin || isUserLeader) {
-                setTimeout(autoCleanupDatabase, 3000); 
-            }
-        }
-    })
-    .catch(error => console.log("Fehler beim Laden des Users:", error));
-
-            // 2. Checklisten aufräumen (Hier ist die Dokument-ID die Discord-ID)
             db.collection("checklist").get().then(snapshot => {
                 snapshot.forEach(doc => {
-                    // Wenn die Discord-ID NICHT mehr in der Fraktion ist:
                     if (!validIds.includes(doc.id)) {
                         db.collection("checklist").doc(doc.id).delete()
                             .then(() => console.log(`Veraltete Checkliste von ${doc.id} wurde gelöscht.`));
@@ -1167,7 +1150,7 @@ function loadSpindForUser() {
     listenToSpind(selected);
 }
 
-// --- PRODUKTIONS LOGIK (Waffen, Ephi, etc.) ---
+// --- PRODUKTIONS LOGIK ---
 function loadRecipe() {
     const inputs = document.getElementById("inputs"); inputs.innerHTML = "";
     let item = document.getElementById("itemSelect").value;
@@ -1957,6 +1940,11 @@ fetch('/api/user')
             }
             
             updateOnlineStatus();
+
+            // Wenn der User Admin oder Leader ist, starte den Aufräum-Prozess nach 3 Sekunden
+            if (isUserAdmin || isUserLeader) {
+                setTimeout(autoCleanupDatabase, 3000); 
+            }
         }
     })
     .catch(error => console.log("Fehler beim Laden des Users:", error));
