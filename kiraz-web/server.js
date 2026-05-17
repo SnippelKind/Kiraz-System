@@ -246,41 +246,53 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ Die Anzahl muss größer als 0 sein.', ephemeral: true });
         }
 
-        // Wir nutzen den Server-Nickname (genau wie das Web-Panel es tut)
-        const targetName = targetMember.nickname || targetMember.user.globalName || targetMember.user.username;
-        const executorName = interaction.member.nickname || interaction.member.user.globalName || interaction.member.user.username;
+        // NUTZT displayName: Das ist in Discord.js exakt dasselbe wie (Nickname || GlobalName || Username) aus dem Web-Panel
+        const targetName = targetMember.displayName;
+        const executorName = interaction.member.displayName;
         
         const docRef = db.collection("lockers").doc(targetName);
 
         try {
-            // Firestore Transaktion (verhindert Überschneidungen)
-            await db.runTransaction(async (t) => {
+            // Wir lassen uns den neuen Bestand aus der Transaktion zurückgeben
+            const newAmount = await db.runTransaction(async (t) => {
                 const doc = await t.get(docRef);
                 let items = {};
                 if (doc.exists) items = doc.data().items || {};
 
                 let currentAmount = items[item] || 0;
+                let updatedAmount = 0;
 
                 if (action === 'einlagern') {
-                    items[item] = currentAmount + anzahl;
+                    updatedAmount = currentAmount + anzahl;
                 } else if (action === 'auslagern') {
-                    items[item] = Math.max(0, currentAmount - anzahl);
+                    updatedAmount = Math.max(0, currentAmount - anzahl);
                 }
 
+                items[item] = updatedAmount;
                 t.set(docRef, { items: items }, { merge: true });
+
+                return updatedAmount; // Gibt den berechneten Wert nach außen
             });
 
-            // Aktion in der Protokoll-Datenbank verewigen (für das "System Protokoll" Tab)
+            // Aktion im System Protokoll speichern
             let actText = action === 'einlagern' ? 'eingelagert' : 'entnommen';
             await db.collection("logs").add({
                 user: executorName,
-                action: `Discord Bot Befehl (/${action})`,
+                action: `Discord Bot (/${action})`,
                 details: `${anzahl}x ${item} bei ${targetName} ${actText}.`,
                 timestamp: admin.firestore.FieldValue.serverTimestamp()
             });
 
+            // Erweiterte Antwort in Discord, die den neuen Bestand verrät!
             const emoji = action === 'einlagern' ? '📥' : '📤';
-            interaction.reply({ content: `${emoji} Erfolgreich **${anzahl}x ${item}** beim Spind von **${targetName}** ${actText}.` });
+            let replyText = `${emoji} Erfolgreich **${anzahl}x ${item}** beim Spind von **${targetName}** ${actText}.\n📦 **Neuer Bestand:** ${newAmount}x`;
+            
+            // Kleiner Hinweis, falls man mehr auslagern wollte, als der User besaß
+            if (action === 'auslagern' && newAmount === 0) {
+                replyText += ` *(Hinweis: Der Spind hatte evtl. nicht genug Items, daher steht er jetzt bei 0).*`;
+            }
+
+            interaction.reply({ content: replyText });
 
         } catch (error) {
             console.error("Datenbank Fehler beim Slash-Command:", error);
