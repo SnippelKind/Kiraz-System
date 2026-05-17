@@ -368,17 +368,16 @@
 <div id="smeltTab" style="display:none;">
     <div class="box">
         <h2 style="color:#ffcc00">🔥 Schmelzofen</h2>
-        <div style="margin-bottom: 25px;">
-            <p class="smelt-info">Verhältnis 2:1 (Erz zu Metall)</p>
-            <input type="number" id="oreInput" placeholder="Erz Menge...">
-            <p id="metalOutput" style="color: #77dd77; font-weight: bold; margin-top:10px;"></p>
-        </div>
-        <hr style="border: 0.5px solid #3e3e5e; margin: 20px 0;">
-        <div>
-            <p class="smelt-info">Verhältnis 7:1 (Metall zu Rahmen)</p>
-            <input type="number" id="metalInput" placeholder="Metall Menge...">
-            <p id="frameOutput" style="color: #77dd77; font-weight: bold; margin-top:10px;"></p>
-        </div>
+        <select id="smeltSelect" onchange="loadSmeltRecipe()">
+            <option value="">-- Prozess wählen --</option>
+            <option value="Metall">1. Metallerz ➔ Metall (2:1)</option>
+            <option value="Waffenrahmen">2. Metall ➔ Waffenrahmen (7:1)</option>
+        </select>
+        <input type="number" id="smeltAmount" placeholder="Anzahl der Durchläufe..." min="1" oninput="checkSmeltCraft();">
+        <div id="smeltInputs"></div>
+        <div id="smeltStats" class="stat-box"></div>
+        <p id="smeltResult" class="result">Bitte Prozess wählen</p>
+        <button id="smeltStartBtn" class="btn-action" onclick="createSmeltCraft()" style="display:none;">▶ Produktion starten</button>
     </div>
 </div>
 
