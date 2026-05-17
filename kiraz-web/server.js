@@ -4,6 +4,24 @@ const session = require('express-session');
 const axios = require('axios');
 const path = require('path');
 
+// --- NEU: Discord.js & Firebase Admin importieren ---
+const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
+const admin = require("firebase-admin");
+
+// --- NEU: Firebase Admin über Render Umgebungsvariable laden ---
+let serviceAccount;
+try {
+    // Wandelt den Text aus Render wieder in ein echtes JSON-Objekt um
+    serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+} catch (error) {
+    console.error("KRITISCHER FEHLER: FIREBASE_CREDENTIALS in Render ist leer oder fehlerhaft formatiert!");
+}
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+const db = admin.firestore();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -13,25 +31,14 @@ const REQUIRED_ROLE_ID = '1365489886022467705';
 
 // Admin Rollen
 const ADMIN_ROLES = ['1393797458366042205', '1394457300693024838', '1500290272276381716'];
-
-// Leader Rollen (inklusive der neuen ID)
 const LEADER_ROLES = ['1484284804143906956', '1485002612372668557'];
 
-// Exakte Reihenfolge der Rollen-IDs für die Checkliste
 const RANK_ORDER = [
-    '1346576630767816869', // 12
-    '1346576630767816868', // 11
-    '1346576630767816867', // 10
-    '1346576630767816866', // 09
-    '1346576630751035542', // 08
-    '1346576630751035541', // 07
-    '1346576630751035540', // 06
-    '1346576630751035539', // 05
-    '1346576630751035538', // 04
-    '1346576630751035537', // 03 
-    '1346576630751035536', // 02
-    '1393759494722293850', // 01
-    '1483760918511747223' // 00
+    '1346576630767816869', '1346576630767816868', '1346576630767816867', 
+    '1346576630767816866', '1346576630751035542', '1346576630751035541', 
+    '1346576630751035540', '1346576630751035539', '1346576630751035538', 
+    '1346576630751035537', '1346576630751035536', '1393759494722293850', 
+    '1483760918511747223'
 ];
 
 app.use((req, res, next) => {
@@ -56,6 +63,12 @@ app.get('/', (req, res) => {
 app.get('/login', (req, res) => {
     const authorizeUrl = `https://discord.com/api/oauth2/authorize?client_id=${process.env.CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}&response_type=code&scope=identify%20guilds.members.read`;
     res.redirect(authorizeUrl);
+});
+
+app.get('/logout', (req, res) => {
+    req.session.destroy(err => {
+        res.redirect('/'); 
+    });
 });
 
 app.get('/callback', async (req, res) => {
@@ -110,7 +123,6 @@ app.get('/api/user', (req, res) => {
     }
 });
 
-// ÜBERARBEITET: Admins und Leader dürfen die Liste abrufen (Für Checkliste UND Spind-Dropdown)
 app.get('/api/faction-members', async (req, res) => {
     if (!req.session.isLeader && !req.session.isAdmin) return res.status(403).json({ error: "Keine Rechte" });
 
@@ -128,16 +140,12 @@ app.get('/api/faction-members', async (req, res) => {
         const membersData = membersRes.data;
         let factionMembers = [];
 
-        // Wir gehen die RANK_ORDER durch, um die Sortierung beizubehalten
         RANK_ORDER.forEach(roleId => {
             const roleInfo = rolesData.find(r => r.id === roleId);
             const roleName = roleInfo ? roleInfo.name : "Unbekannter Rang";
-
-            // Alle Mitglieder finden, die GENAU diese Rolle haben
             const peopleWithRole = membersData.filter(m => m.roles.includes(roleId));
 
             peopleWithRole.forEach(p => {
-                // Nur hinzufügen, wenn noch nicht in der Liste (vermeidet Dopplungen bei mehreren Rollen)
                 if (!factionMembers.some(fm => fm.id === p.user.id)) {
                     factionMembers.push({
                         id: p.user.id,
@@ -160,11 +168,126 @@ app.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
 });
 
-app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));
+app.listen(PORT, () => console.log(`Dashboard Server läuft auf Port ${PORT}`));
 
-// --- NEU: Logout Route ---
-app.get('/logout', (req, res) => {
-    req.session.destroy(err => {
-        res.redirect('/'); // Nach dem Logout zurück zur Login-Seite
-    });
+
+// ==========================================
+// DISCORD BOT & SLASH COMMANDS LOGIK
+// ==========================================
+
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+const spindItems = [
+    { name: 'SNS-Pistole', value: 'SNS-Pistole' },
+    { name: 'Normale Pistole', value: 'Normale Pistole' },
+    { name: 'MK2 Pistole', value: 'MK2 Pistole' },
+    { name: '50. Pistole', value: '50. Pistole' },
+    { name: 'Mikro SMG', value: 'Mikro SMG' },
+    { name: 'Abgesägte Schrottflinte', value: 'Abgesägte Schrottflinte' }
+];
+
+// Die Definition der Befehle
+const commands = [
+    {
+        name: 'einlagern',
+        description: 'Legt Items in den Spind eines Mitglieds (Admin-Befehl)',
+        options: [
+            { name: 'mitglied', type: 6, description: 'Das Mitglied auswählen', required: true },
+            { name: 'item', type: 3, description: 'Welches Item?', required: true, choices: spindItems },
+            { name: 'anzahl', type: 4, description: 'Wie viele?', required: true }
+        ]
+    },
+    {
+        name: 'auslagern',
+        description: 'Nimmt Items aus dem Spind eines Mitglieds (Admin-Befehl)',
+        options: [
+            { name: 'mitglied', type: 6, description: 'Das Mitglied auswählen', required: true },
+            { name: 'item', type: 3, description: 'Welches Item?', required: true, choices: spindItems },
+            { name: 'anzahl', type: 4, description: 'Wie viele?', required: true }
+        ]
+    }
+];
+
+client.once('ready', async () => {
+    console.log(`🤖 Bot eingeloggt als ${client.user.tag}`);
+    
+    // Befehle automatisch auf dem Server registrieren
+    const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
+    try {
+        await rest.put(
+            Routes.applicationGuildCommands(process.env.CLIENT_ID, REQUIRED_GUILD_ID),
+            { body: commands }
+        );
+        console.log('✅ Slash-Befehle erfolgreich registriert.');
+    } catch (error) {
+        console.error('❌ Fehler beim Registrieren der Befehle:', error);
+    }
 });
+
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+
+    // Nur User mit der spezifischen Admin-Rolle dürfen die Befehle ausführen
+    if (!interaction.member.roles.cache.has('1393797458366042205')) {
+        return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Befehl.', ephemeral: true });
+    }
+
+    if (interaction.commandName === 'einlagern' || interaction.commandName === 'auslagern') {
+        const targetMember = interaction.options.getMember('mitglied');
+        const item = interaction.options.getString('item');
+        const anzahl = interaction.options.getInteger('anzahl');
+        const action = interaction.commandName; // 'einlagern' oder 'auslagern'
+
+        if (!targetMember) {
+            return interaction.reply({ content: '❌ Mitglied konnte nicht gefunden werden.', ephemeral: true });
+        }
+
+        if (anzahl <= 0) {
+            return interaction.reply({ content: '❌ Die Anzahl muss größer als 0 sein.', ephemeral: true });
+        }
+
+        // Wir nutzen den Server-Nickname (genau wie das Web-Panel es tut)
+        const targetName = targetMember.nickname || targetMember.user.globalName || targetMember.user.username;
+        const executorName = interaction.member.nickname || interaction.member.user.globalName || interaction.member.user.username;
+        
+        const docRef = db.collection("lockers").doc(targetName);
+
+        try {
+            // Firestore Transaktion (verhindert Überschneidungen)
+            await db.runTransaction(async (t) => {
+                const doc = await t.get(docRef);
+                let items = {};
+                if (doc.exists) items = doc.data().items || {};
+
+                let currentAmount = items[item] || 0;
+
+                if (action === 'einlagern') {
+                    items[item] = currentAmount + anzahl;
+                } else if (action === 'auslagern') {
+                    items[item] = Math.max(0, currentAmount - anzahl);
+                }
+
+                t.set(docRef, { items: items }, { merge: true });
+            });
+
+            // Aktion in der Protokoll-Datenbank verewigen (für das "System Protokoll" Tab)
+            let actText = action === 'einlagern' ? 'eingelagert' : 'entnommen';
+            await db.collection("logs").add({
+                user: executorName,
+                action: `Discord Bot Befehl (/${action})`,
+                details: `${anzahl}x ${item} bei ${targetName} ${actText}.`,
+                timestamp: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            const emoji = action === 'einlagern' ? '📥' : '📤';
+            interaction.reply({ content: `${emoji} Erfolgreich **${anzahl}x ${item}** beim Spind von **${targetName}** ${actText}.` });
+
+        } catch (error) {
+            console.error("Datenbank Fehler beim Slash-Command:", error);
+            interaction.reply({ content: '❌ Es gab einen Datenbank-Fehler beim Verarbeiten des Befehls.', ephemeral: true });
+        }
+    }
+});
+
+// Bot starten
+client.login(process.env.BOT_TOKEN);
