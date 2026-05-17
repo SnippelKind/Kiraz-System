@@ -332,7 +332,7 @@ function updateSpindItem(action) {
 function autoCleanupDatabase() {
     if (!isUserLeader && !isUserAdmin) return;
 
-    fetch('/api/faction-members')
+    fetch('/api/faction-members?t=' + Date.now())
         .then(res => res.json())
         .then(members => {
             if(!Array.isArray(members)) return;
@@ -1076,7 +1076,7 @@ async function initChecklist() {
     if(!isUserLeader) return;
 
     try {
-        const res = await fetch('/api/faction-members');
+        const res = await fetch('/api/faction-members?t=' + Date.now());
         if(res.ok) {
             factionRoster = await res.json();
         } else {
