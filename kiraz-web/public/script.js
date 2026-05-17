@@ -93,14 +93,15 @@ function updateOnlineStatus() {
 }
 setInterval(updateOnlineStatus, 10000);
 
-db.collection("online").onSnapshot((snapshot) => {
+b.collection("online").onSnapshot((snapshot) => {
     const list = document.getElementById("onlineList");
     const countBtn = document.getElementById("onlineCountBtn");
     if(!list || !countBtn) return;
 
     let now = Date.now();
     let members = [];
-    snapshot.forEach(doc => members.push(doc.data()));
+    // Wichtig: Wir speichern jetzt auch die ID (doc.id) mit ab
+    snapshot.forEach(doc => members.push({ id: doc.id, ...doc.data() }));
 
     members.sort((a, b) => b.lastActive - a.lastActive);
 
@@ -109,13 +110,23 @@ db.collection("online").onSnapshot((snapshot) => {
 
     members.forEach(data => {
         let diff = now - data.lastActive;
+        
+        // NEU: Wenn sich der User länger als 2 Minuten (120.000 ms) nicht gemeldet hat:
+        if (diff > 120000) {
+            // Ausblenden und Datenbank bereinigen (nur Admins oder der User selbst räumen auf, um Spam zu vermeiden)
+            if (isUserAdmin || data.username === currentUser) {
+                db.collection("online").doc(data.id).delete().catch(err => {});
+            }
+            return; // Überspringt diesen User, er wird nicht mehr angezeigt!
+        }
+
         let isOnline = diff < 35000;
         if (isOnline) onlineCount++;
 
         let statusIcon = isOnline ? "🟢" : "⚪";
         let timeLabel = isOnline ? 
             '<span style="color: #77dd77; font-size: 0.8em;">Aktiv</span>' : 
-            `<span style="color: #aaa; font-size: 0.8em;">Zuletzt: ${new Date(data.lastActive).toLocaleString("de-DE", {hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'})}</span>`;
+            `<span style="color: #aaa; font-size: 0.8em;">Vor ${Math.floor(diff / 1000)}s</span>`;
 
         listHtml += `
             <div style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
@@ -126,6 +137,10 @@ db.collection("online").onSnapshot((snapshot) => {
                 <div>${timeLabel}</div>
             </div>`;
     });
+
+    list.innerHTML = listHtml === "" ? "<p style='color:#aaa; text-align:center;'>Aktuell ist niemand online.</p>" : listHtml;
+    countBtn.innerText = `👥 Mitglieder (${onlineCount})`;
+});
 
     list.innerHTML = members.length === 0 ? "<p style='color:#aaa; text-align:center;'>Noch keine Daten.</p>" : listHtml;
     countBtn.innerText = `👥 Mitglieder (${onlineCount})`;
