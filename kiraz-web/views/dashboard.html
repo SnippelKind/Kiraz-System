@@ -376,7 +376,6 @@
         transform: scale(1.1);
     }
 
-    /* Neu: Container für Stat-Zusammenfassung */
     .stat-box {
         margin-top: 15px; 
         padding: 12px; 
@@ -459,9 +458,36 @@
     <div class="tabs">
         <button onclick="openRoute('timerTab')">⏱ Alle Timer</button>
         <button onclick="openRoute('smeltTab')">🔥 Schmelzofen</button>
+        <button onclick="openRoute('spindTab'); openSpindTab();">🗄️ Fraktions-Spind</button>
         <button id="logBtn" onclick="openRoute('logTab')" style="display:none;">📜 Protokoll</button>
         <button id="checklistBtn" onclick="openRoute('checklistTab')" style="display:none; background: #dddddd; color: #121212;">📋 Rang-Checkliste</button>
         <button id="onlineCountBtn" onclick="openRoute('onlineTab')">👥 Online (0)</button>
+    </div>
+</div>
+
+<div id="spindTab" style="display:none;">
+    <div class="box box-large">
+        <h2 style="color:#ffffff">🗄️ Persönlicher Spind</h2>
+        <p style="color:#ccc;">Hier kannst du deine Items lagern. Die Leitung hat Zugriff auf alle Spinde.</p>
+
+        <div id="spindAdminView" style="display:none; margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
+            <label for="spindUserSelect" style="color:#aaa; font-weight: bold; margin-bottom: 10px; display: block;">👀 Leitung: Spind eines Mitglieds einsehen</label>
+            <select id="spindUserSelect" onchange="loadSpindForUser()">
+                </select>
+        </div>
+
+        <h3 id="spindTitle" style="color: #77dd77; border-bottom: 1px solid #333; padding-bottom: 10px;">Mein Spind</h3>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+            <input type="text" id="spindItemName" placeholder="Gegenstand (z.B. SNS Pistole)..." style="flex: 2; min-width: 200px;">
+            <input type="number" id="spindItemAmount" placeholder="Anzahl..." style="flex: 1; min-width: 100px;">
+            <button class="btn-action" onclick="updateSpindItem('add')" style="flex: 1; background: #77dd77; color: black; margin: 0; min-width: 120px;">Eintragen ➕</button>
+            <button class="btn-action" onclick="updateSpindItem('remove')" style="flex: 1; background: #ff6b6b; color: white; margin: 0; min-width: 120px;">Austragen ➖</button>
+        </div>
+
+        <div id="spindList" style="text-align: left; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; border: 1px solid #3e3e5e; min-height: 150px;">
+            Lädt Spind...
+        </div>
     </div>
 </div>
 
@@ -743,43 +769,28 @@ const db = firebase.firestore();
 let currentUser = "Unbekannt"; 
 let isUserAdmin = false; 
 
-// --- NEU: MATERIAL DATENBANK (GEWICHT & SAMMELZEIT) ---
-// Hier kannst du die Werte für jedes Item im Spiel exakt eintragen!
 const materialDaten = {
-    // Ephi Route
     "Frosch": { weight: 1.0, gatherAmount: 12, gatherTimeMin: 1 },
     "Froschhaut": { weight: 0.1 }, 
     "Ephi Extrakt": { weight: 0.05 },
     "Ephi": { weight: 0.02 },
-
-    // Kokain Route (Beispielwerte)
     "Kokain Blätter": { weight: 0.5, gatherAmount: 15, gatherTimeMin: 1 },
     "Benzin": { weight: 2.0, gatherAmount: 5, gatherTimeMin: 1 },
     "Methanol": { weight: 1.0, gatherAmount: 8, gatherTimeMin: 1 },
     "Kokain": { weight: 0.05 },
-
-    // Meth Route (Beispielwerte)
     "Natronlauge": { weight: 1.0, gatherAmount: 10, gatherTimeMin: 1 },
     "Lithiumfolie": { weight: 0.2, gatherAmount: 20, gatherTimeMin: 1 },
     "Ammoniumnitrat": { weight: 1.5, gatherAmount: 6, gatherTimeMin: 1 },
     "Meth": { weight: 0.05 },
-
-    // Ecstasy Route (Beispielwerte)
     "Koffeinpulver": { weight: 0.5, gatherAmount: 15, gatherTimeMin: 1 },
     "Nitroethan": { weight: 1.0, gatherAmount: 10, gatherTimeMin: 1 },
     "Methylamin": { weight: 1.0, gatherAmount: 10, gatherTimeMin: 1 },
     "Ecstasy": { weight: 0.02 },
-
-    // Westen Route (Beispielwerte)
     "Baumwolle": { weight: 0.2, gatherAmount: 20, gatherTimeMin: 1 },
     "Polyethylenplatten": { weight: 2.5, gatherAmount: 3, gatherTimeMin: 1 },
-
-    // Munition Route (Beispielwerte)
     "Zündladungen": { weight: 0.01, gatherAmount: 40, gatherTimeMin: 1 },
     "Projektil": { weight: 0.02, gatherAmount: 40, gatherTimeMin: 1 },
     "Patronenhülsen": { weight: 0.02, gatherAmount: 40, gatherTimeMin: 1 },
-
-    // Waffen & Schmelzofen
     "Waffenrahmen": { weight: 1.5 },
     "Schlagbolzen": { weight: 0.1 },
     "Riegel": { weight: 0.3 },
@@ -788,7 +799,6 @@ const materialDaten = {
     "Bargeld": { weight: 0.0 }
 };
 
-// Hilfsfunktion: Bereitet den Info-Text für Inputs vor
 function getMaterialInfoText(matName) {
     if (!materialDaten[matName]) return "";
     let data = materialDaten[matName];
@@ -797,14 +807,12 @@ function getMaterialInfoText(matName) {
     return ` <span style="color:#888; font-size:0.85em;">(${w}${g})</span>`;
 }
 
-// Hilfsfunktion: Berechnet und zeigt die Stats-Zusammenfassung an
 function updateCraftStats(dataMats, amount, statsDivId) {
     let statsDiv = document.getElementById(statsDivId);
     if (!statsDiv) return;
-
     let totalWeight = 0;
     let totalGatherTime = 0;
-    let requiredGathering = false; // Checkt ob überhaupt was gesammelt werden muss
+    let requiredGathering = false; 
 
     for (let t in dataMats) {
         let need = dataMats[t] * amount;
@@ -813,7 +821,6 @@ function updateCraftStats(dataMats, amount, statsDivId) {
             
             if(materialDaten[t].gatherAmount && materialDaten[t].gatherTimeMin) {
                 requiredGathering = true;
-                // Berechnet wie viele Zyklen gefarmt werden müssen (aufgerundet)
                 let cycles = Math.ceil(need / materialDaten[t].gatherAmount);
                 totalGatherTime += cycles * materialDaten[t].gatherTimeMin;
             }
@@ -829,8 +836,6 @@ function updateCraftStats(dataMats, amount, statsDivId) {
     }
 }
 
-
-// --- ONLINE HEARTBEAT ---
 function updateOnlineStatus() {
     if(currentUser !== "Unbekannt") {
         db.collection("online").doc(currentUser).set({
@@ -842,7 +847,6 @@ function updateOnlineStatus() {
 }
 setInterval(updateOnlineStatus, 10000);
 
-// --- ERWEITERTE MITGLIEDER LISTE ---
 db.collection("online").onSnapshot((snapshot) => {
     const list = document.getElementById("onlineList");
     const countBtn = document.getElementById("onlineCountBtn");
@@ -881,7 +885,6 @@ db.collection("online").onSnapshot((snapshot) => {
     countBtn.innerText = `👥 Mitglieder (${onlineCount})`;
 });
 
-// --- LOG FUNKTION ---
 function addLog(action, details) {
     db.collection("logs").add({
         user: currentUser,
@@ -925,7 +928,6 @@ db.collection("crafts").onSnapshot((querySnapshot) => {
     render(); 
 });
 
-// --- REZEPTE ---
 const rezepte = {
     "SNS Pistole": { mats: { "Waffenrahmen": 15, "Schlagbolzen": 25, "Riegel": 35 }, time: 1320 },
     "Normale Pistole": { mats: { "Waffenrahmen": 45, "Schlagbolzen": 30, "Riegel": 35 }, time: 2000 },
@@ -974,6 +976,7 @@ function showDashboard() {
     document.getElementById('munitionTab').style.display = "none";
     document.getElementById('geldwaescheTab').style.display = "none"; 
     document.getElementById('schwarzmarktTab').style.display = "none"; 
+    document.getElementById('spindTab').style.display = "none"; // Spind verstecken
     document.getElementById('checklistTab').style.display = "none";
     document.getElementById('timerTab').style.display = "none";
     document.getElementById('smeltTab').style.display = "none";
@@ -990,7 +993,129 @@ function openRoute(tabId) {
     window.scrollTo(0,0);
 }
 
-// --- WAFFEN LOGIK ---
+// --- SPIND / INVENTAR LOGIK ---
+let currentSpindViewUser = "";
+let spindUnsubscribe = null;
+
+function openSpindTab() {
+    currentSpindViewUser = currentUser;
+    document.getElementById('spindTitle').innerText = "Mein Spind (" + currentUser + ")";
+    
+    // Prüfe ob User Admin/Leader ist
+    if (isUserAdmin || isUserLeader) {
+        document.getElementById('spindAdminView').style.display = "block";
+        populateSpindUserSelect();
+    }
+    
+    listenToSpind(currentSpindViewUser);
+}
+
+function listenToSpind(username) {
+    if (spindUnsubscribe) spindUnsubscribe(); 
+    
+    const list = document.getElementById("spindList");
+    list.innerHTML = "<p style='color:#aaa; text-align:center;'>Lade Daten...</p>";
+
+    spindUnsubscribe = db.collection("lockers").doc(username).onSnapshot(doc => {
+        if (!doc.exists) {
+            list.innerHTML = "<p style='color:#aaa; text-align:center;'>Spind ist leer.</p>";
+            return;
+        }
+        const data = doc.data().items || {};
+        renderSpindList(data);
+    });
+}
+
+function renderSpindList(items) {
+    const list = document.getElementById("spindList");
+    list.innerHTML = "";
+    let empty = true;
+    
+    for (let item in items) {
+        if (items[item] > 0) {
+            empty = false;
+            list.innerHTML += `
+            <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #3e3e5e; background: rgba(255,255,255,0.02); margin-bottom: 5px; border-radius: 5px;">
+                <span style="color:#fff; font-weight:bold; font-size: 1.1em;">📦 ${item}</span>
+                <span style="color:#77dd77; font-weight:bold; font-size: 1.1em;">${items[item]}x</span>
+            </div>`;
+        }
+    }
+    if (empty) {
+        list.innerHTML = "<p style='color:#aaa; text-align:center;'>Spind ist leer.</p>";
+    }
+}
+
+function updateSpindItem(action) {
+    const itemName = document.getElementById("spindItemName").value.trim();
+    const amount = parseInt(document.getElementById("spindItemAmount").value);
+    
+    if (!itemName || isNaN(amount) || amount <= 0) {
+        alert("Bitte einen Gegenstand und eine gültige Anzahl eingeben.");
+        return;
+    }
+
+    const targetUser = currentSpindViewUser; 
+    const docRef = db.collection("lockers").doc(targetUser);
+
+    db.runTransaction(transaction => {
+        return transaction.get(docRef).then(doc => {
+            let items = {};
+            if (doc.exists) {
+                items = doc.data().items || {};
+            }
+
+            let currentAmount = items[itemName] || 0;
+            if (action === 'add') {
+                items[itemName] = currentAmount + amount;
+            } else if (action === 'remove') {
+                items[itemName] = Math.max(0, currentAmount - amount); 
+            }
+
+            transaction.set(docRef, { items: items }, { merge: true });
+        });
+    }).then(() => {
+        document.getElementById("spindItemName").value = "";
+        document.getElementById("spindItemAmount").value = "";
+        
+        let actText = action === 'add' ? 'eingelagert' : 'entnommen';
+        addLog("Spind genutzt", `${amount}x ${itemName} bei ${targetUser} ${actText}.`);
+    }).catch(err => console.error("Fehler beim Spind Update:", err));
+}
+
+function populateSpindUserSelect() {
+    const select = document.getElementById("spindUserSelect");
+    if (select.options.length > 0) return; 
+    
+    select.innerHTML = `<option value="${currentUser}">Mein eigener Spind</option>`;
+    
+    fetch('/api/faction-members')
+        .then(res => res.json())
+        .then(members => {
+            if(Array.isArray(members)) {
+                members.sort((a, b) => a.name.localeCompare(b.name)).forEach(member => {
+                    if (member.name !== currentUser) {
+                        select.innerHTML += `<option value="${member.name}">${member.name} (${member.rankName})</option>`;
+                    }
+                });
+            }
+        }).catch(err => console.log("Fehler beim Laden der Mitglieder für den Spind", err));
+}
+
+function loadSpindForUser() {
+    const selected = document.getElementById("spindUserSelect").value;
+    currentSpindViewUser = selected;
+    
+    if (selected === currentUser) {
+        document.getElementById('spindTitle').innerText = "Mein Spind (" + currentUser + ")";
+    } else {
+        document.getElementById('spindTitle').innerText = "Spind von " + selected;
+    }
+    
+    listenToSpind(selected);
+}
+
+// --- PRODUKTIONS LOGIK (Waffen, Ephi, etc.) ---
 function loadRecipe() {
     const inputs = document.getElementById("inputs"); inputs.innerHTML = "";
     let item = document.getElementById("itemSelect").value;
@@ -1037,7 +1162,6 @@ function createCraft() {
     openRoute('timerTab');
 }
 
-// --- EPHI LOGIK ---
 function loadEphiRecipe() {
     const inputs = document.getElementById("ephiInputs"); inputs.innerHTML = "";
     let item = document.getElementById("ephiSelect").value;
@@ -1078,7 +1202,6 @@ function createEphiCraft() {
     openRoute('timerTab');
 }
 
-// --- KOKAIN LOGIK ---
 function loadKokainRecipe() {
     const inputs = document.getElementById("kokainInputs"); inputs.innerHTML = "";
     let item = document.getElementById("kokainSelect").value;
@@ -1119,7 +1242,6 @@ function createKokainCraft() {
     openRoute('timerTab');
 }
 
-// --- METH LOGIK ---
 function loadMethRecipe() {
     const inputs = document.getElementById("methInputs"); inputs.innerHTML = "";
     let item = document.getElementById("methSelect").value;
@@ -1159,7 +1281,6 @@ function createMethCraft() {
     openRoute('timerTab');
 }
 
-// --- ECSTASY LOGIK ---
 function loadEcstasyRecipe() {
     const inputs = document.getElementById("ecstasyInputs"); inputs.innerHTML = "";
     let item = document.getElementById("ecstasySelect").value;
@@ -1199,7 +1320,6 @@ function createEcstasyCraft() {
     openRoute('timerTab');
 }
 
-// --- WESTEN LOGIK ---
 function loadWestenRecipe() {
     const inputs = document.getElementById("westenInputs"); inputs.innerHTML = "";
     let item = document.getElementById("westenSelect").value;
@@ -1240,7 +1360,6 @@ function createWestenCraft() {
     openRoute('timerTab');
 }
 
-// --- MUNITION LOGIK ---
 function loadMunitionRecipe() {
     const inputs = document.getElementById("munitionInputs"); inputs.innerHTML = "";
     let item = document.getElementById("munitionSelect").value;
@@ -1280,7 +1399,6 @@ function createMunitionCraft() {
     openRoute('timerTab');
 }
 
-// --- GELDWÄSCHE LOGIK ---
 function checkGeldwaesche() {
     let amount = parseInt(document.getElementById("schwarzgeldAmount").value) || 0;
     let hours = parseInt(document.getElementById("geldwaescheHours").value) || 1;
@@ -1327,7 +1445,6 @@ function createGeldwaesche() {
     openRoute('timerTab');
 }
 
-// --- TIMER LOGIK ---
 function togglePause(id) {
     let c = crafts.find(x => x.id === id); if(!c) return;
     
@@ -1467,7 +1584,6 @@ if(oreInput) oreInput.addEventListener("input", (e) => { document.getElementById
 let metalInput = document.getElementById("metalInput");
 if(metalInput) metalInput.addEventListener("input", (e) => { document.getElementById("frameOutput").innerText = "Ertrag: " + Math.floor((parseInt(e.target.value) || 0) / 7) + " Rahmen"; });
 
-// --- SCHWARZMARKT LOGIK ---
 const shopItems = [
     { name: "Messer", cat: "Nahkampfwaffen", price: "12.375 €", icon: "🔪" },
     { name: "Baseballschläger", cat: "Nahkampfwaffen", price: "13.200 €", icon: "🏏" },
@@ -1515,7 +1631,6 @@ function renderShop() {
 }
 renderShop();
 
-// --- FIREBASE MAP LOGIK ---
 let currentSelectedMarkerIndex = null;
 
 db.collection("markers").onSnapshot((querySnapshot) => {
@@ -1672,7 +1787,6 @@ function clearAllMarkers() {
     }
 }
 
-// --- CHECKLISTEN LOGIK (Nur für Leader) ---
 let isUserLeader = false;
 let checklistData = {};
 let factionRoster = [];
@@ -1767,7 +1881,6 @@ function deleteChecklistTask(memberId, taskIndex) {
     }
 }
 
-// --- Discord-Namen laden UND Admin Rechte abfragen ---
 fetch('/api/user')
     .then(response => response.json())
     .then(data => {
@@ -1775,27 +1888,4 @@ fetch('/api/user')
             currentUser = data.username; 
             
             document.getElementById('userNameDisplay').innerText = data.username;
-            document.getElementById('userProfile').style.display = "flex";
-            
-            if(data.isAdmin) {
-                isUserAdmin = true; 
-                document.getElementById('deleteAllBtn').style.display = "block";
-                document.getElementById('deleteSingleBtn').style.display = "block";
-                document.getElementById('editSingleBtn').style.display = "block"; 
-                document.getElementById('logBtn').style.display = "inline-block"; 
-            }
-
-            // NEU: Prüfen, ob der Nutzer die 1484284804143906956 Rolle hat
-            if(data.isLeader) {
-                isUserLeader = true;
-                document.getElementById('checklistBtn').style.display = "inline-block";
-                initChecklist(); // Checkliste aus Firebase und Discord laden
-            }
-            
-            updateOnlineStatus();
-        }
-    })
-    .catch(error => console.log("Fehler beim Laden des Users:", error));
-</script>
-</body>
-</html>
+            document.getElementById('userProfile').style.
