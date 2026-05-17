@@ -37,10 +37,10 @@ const materialDaten = {
     "Zündladungen": { weight: 0.01, gatherAmount: 40, gatherTimeMin: 1 },
     "Projektil": { weight: 0.02, gatherAmount: 40, gatherTimeMin: 1 },
     "Patronenhülsen": { weight: 0.02, gatherAmount: 40, gatherTimeMin: 1 },
-    "Waffenrahmen": { weight: 1.5 },
+    "Waffenrahmen": { weight: 0.3 }, 
     "Schlagbolzen": { weight: 0.1 },
     "Riegel": { weight: 0.3 },
-    "Erz": { weight: 3.0, gatherAmount: 5, gatherTimeMin: 1 },
+    "Metallerz": { weight: 1.0, gatherAmount: 18, gatherTimeMin: 1 },
     "Metall": { weight: 1.5 },
     "Bargeld": { weight: 0.0 }
 };
@@ -220,6 +220,11 @@ const westenRezepte = {
 const munitionRezepte = {
     "Pistolen Magazin": { mats: { "Zündladungen": 2, "Projektil": 3, "Patronenhülsen": 4 }, time: 15 },
     "SMG Magazin": { mats: { "Zündladungen": 6, "Projektil": 12, "Patronenhülsen": 16 }, time: 35 }
+};
+
+const smeltRezepte = {
+    "Metall": { mats: { "Metallerz": 2 }, time: 5 }, // 5 Sekunden pro Metall (kannst du anpassen)
+    "Waffenrahmen": { mats: { "Metall": 7 }, time: 15 } // 15 Sekunden pro Rahmen
 };
 
 function showDashboard() {
@@ -691,6 +696,48 @@ function createMunitionCraft() {
     openRoute('timerTab');
 }
 
+function loadSmeltRecipe() {
+    const inputs = document.getElementById("smeltInputs"); inputs.innerHTML = "";
+    let item = document.getElementById("smeltSelect").value;
+    let data = smeltRezepte[item];
+    if (!data) { document.getElementById("smeltStats").style.display = "none"; return; }
+    for (let t in data.mats) {
+        let icon = (t === "Metallerz") ? "🪨" : (t === "Metall" ? "⛓️" : "📦");
+        let info = getMaterialInfoText(t);
+        inputs.innerHTML += `<div class="material"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${icon} ${t}</span>${info}</div><input id="smelt_${t}" type="number" placeholder="Vorhanden..." oninput="checkSmeltCraft()"></div>`;
+    }
+    checkSmeltCraft();
+}
+
+function checkSmeltCraft() {
+    let item = document.getElementById("smeltSelect").value; let amount = parseInt(document.getElementById("smeltAmount").value) || 1;
+    let data = smeltRezepte[item]; let result = document.getElementById("smeltResult"); let startBtn = document.getElementById("smeltStartBtn");
+    
+    if (!data) { 
+        result.innerText = "Bitte Prozess wählen"; result.style.color = "white"; startBtn.style.display = "none"; 
+        document.getElementById("smeltStats").style.display = "none";
+        return; 
+    }
+
+    updateCraftStats(data.mats, amount, "smeltStats");
+
+    let fehlend = [];
+    for (let t in data.mats) {
+        let need = data.mats[t] * amount; let have = parseInt(document.getElementById("smelt_" + t)?.value) || 0;
+        if (have < need) fehlend.push(`${t} (${need - have})`);
+    }
+    if (fehlend.length === 0) { result.innerText = "✅ Materialien bereit!"; result.style.color = "#77dd77"; startBtn.style.display = "block"; } 
+    else { result.innerText = "❌ Fehlt: " + fehlend.join(", "); result.style.color = "#cccccc"; startBtn.style.display = "none"; }
+}
+
+function createSmeltCraft() {
+    let item = document.getElementById("smeltSelect").value; let amount = parseInt(document.getElementById("smeltAmount").value) || 1;
+    let data = smeltRezepte[item]; let durationMs = data.time * amount * 1000; let craftName = (amount > 1 ? amount + "x " : "") + item;
+    db.collection("crafts").add({ name: craftName, startedBy: currentUser, endTime: Date.now() + durationMs, totalDuration: durationMs, paused: false, remainingTime: 0 })
+    .then(() => { addLog("Schmelzofen gestartet", craftName); });
+    openRoute('timerTab');
+}
+
 function checkGeldwaesche() {
     let amount = parseInt(document.getElementById("schwarzgeldAmount").value) || 0;
     let hours = parseInt(document.getElementById("geldwaescheHours").value) || 1;
@@ -871,10 +918,6 @@ function format(s) {
 
 setInterval(tick, 1000);
 
-let oreInput = document.getElementById("oreInput");
-if(oreInput) oreInput.addEventListener("input", (e) => { document.getElementById("metalOutput").innerText = "Ertrag: " + Math.floor((parseInt(e.target.value) || 0) / 2) + " Metall"; });
-let metalInput = document.getElementById("metalInput");
-if(metalInput) metalInput.addEventListener("input", (e) => { document.getElementById("frameOutput").innerText = "Ertrag: " + Math.floor((parseInt(e.target.value) || 0) / 7) + " Rahmen"; });
 
 const shopItems = [
     { name: "Messer", cat: "Nahkampfwaffen", price: "12.375 €", icon: "🔪" },
