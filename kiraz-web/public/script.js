@@ -1209,3 +1209,11 @@ fetch('/api/user')
         }
     })
     .catch(error => console.log("Fehler beim Laden des Users:", error));
+
+// NEU: Sofortige Löschung aus der Online-Liste, wenn der Browser/Tab geschlossen wird
+window.addEventListener("beforeunload", () => {
+    if (currentUser && currentUser !== "Unbekannt") {
+        // Meldet den User beim Verlassen sofort ab
+        db.collection("online").doc(currentUser).delete();
+    }
+});
