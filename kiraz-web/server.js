@@ -110,9 +110,9 @@ app.get('/api/user', (req, res) => {
     }
 });
 
-// ÜBERARBEITET: Spezifischer Fix für die Anzeige aller Rollen
+// ÜBERARBEITET: Admins und Leader dürfen die Liste abrufen (Für Checkliste UND Spind-Dropdown)
 app.get('/api/faction-members', async (req, res) => {
-    if (!req.session.isLeader) return res.status(403).json({ error: "Keine Rechte" });
+    if (!req.session.isLeader && !req.session.isAdmin) return res.status(403).json({ error: "Keine Rechte" });
 
     try {
         const [rolesRes, membersRes] = await Promise.all([
