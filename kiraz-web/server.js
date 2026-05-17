@@ -161,3 +161,10 @@ app.get('/dashboard', (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));
+
+// --- NEU: Logout Route ---
+app.get('/logout', (req, res) => {
+    req.session.destroy(err => {
+        res.redirect('/'); // Nach dem Logout zurück zur Login-Seite
+    });
+});
