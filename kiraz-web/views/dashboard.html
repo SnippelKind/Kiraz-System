@@ -97,8 +97,17 @@
 
         <h3 id="spindTitle" style="color: #77dd77; border-bottom: 1px solid #333; padding-bottom: 10px;">Mein Spind</h3>
 
-        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-            <input type="text" id="spindItemName" placeholder="Gegenstand (z.B. SNS Pistole)..." style="flex: 2; min-width: 200px;">
+     <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+            <select id="spindItemName" style="flex: 2; min-width: 200px;">
+                <option value="" disabled selected>-- Gegenstand wählen --</option>
+                <option value="SNS-Pistole">SNS-Pistole</option>
+                <option value="Normale Pistole">Normale Pistole</option>
+                <option value="MK2 Pistole">MK2 Pistole</option>
+                <option value="50. Pistole">50. Pistole</option>
+                <option value="Mikro SMG">Mikro SMG</option>
+                <option value="Abgesägte Schrottflinte">Abgesägte Schrottflinte</option>
+            </select>
+            
             <input type="number" id="spindItemAmount" placeholder="Anzahl..." style="flex: 1; min-width: 100px;">
             <button class="btn-action" onclick="updateSpindItem('add')" style="flex: 1; background: #77dd77; color: black; margin: 0; min-width: 120px;">Eintragen ➕</button>
             <button class="btn-action" onclick="updateSpindItem('remove')" style="flex: 1; background: #ff6b6b; color: white; margin: 0; min-width: 120px;">Austragen ➖</button>
