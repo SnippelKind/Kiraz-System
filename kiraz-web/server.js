@@ -389,7 +389,8 @@ client.on('interactionCreate', async interaction => {
         if (!targetMember) return interaction.reply({ content: '❌ Mitglied nicht gefunden.', ephemeral: true });
 
         const sanktionEmbed = new EmbedBuilder()
-            .setColor('#ff3333')
+            // DESIGN-UPDATE: Mittleres Grau statt Rot
+            .setColor('#808080')
             .setTitle('⚖️ Fraktions-Sanktion')
             .setThumbnail(targetMember.user.displayAvatarURL({ dynamic: true }))
             .addFields(
@@ -428,7 +429,8 @@ client.on('interactionCreate', async interaction => {
         const untilTimestamp = parsedDate.getTime();
 
         const abmeldungEmbed = new EmbedBuilder()
-            .setColor('#ffcc00')
+            // DESIGN-UPDATE: Reines Weiß statt Gelb
+            .setColor('#FFFFFF')
             .setTitle('🏖️ Neue Abmeldung')
             .addFields(
                 { name: '👤 Mitglied', value: `<@${targetMember.id}>`, inline: true },
@@ -463,7 +465,8 @@ client.on('interactionCreate', async interaction => {
             }
 
             const listEmbed = new EmbedBuilder()
-                .setColor('#3498db')
+                // DESIGN-UPDATE: Hellgrau statt Blau
+                .setColor('#C0C0C0')
                 .setTitle('📋 Aktuelle Abmeldungen');
 
             let count = 0;
@@ -514,7 +517,8 @@ client.on('interactionCreate', async interaction => {
             ];
 
             const embed = new EmbedBuilder()
-                .setColor('#2ecc71')
+                // DESIGN-UPDATE: Reines Weiß statt Grün
+                .setColor('#FFFFFF')
                 .setTitle('📋 Team-Übersicht: Verwaltung')
                 .setDescription('Hier ist die aktuelle Auflistung der Verwaltungs-Mitglieder:')
                 .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1504525109988167751/050213-ezgif.com-video-to-gif-converter.gif?ex=6a0beaf2&is=6a0a9972&hm=d182cc1330c0d6630d707c20b80decefe3a9fb50c6fd5810526973f356f7c96f&');
@@ -561,7 +565,8 @@ async function checkAbmeldungen() {
                     const msg = await channel.messages.fetch(data.messageId);
                     if (msg && msg.embeds.length > 0) {
                         const oldEmbed = EmbedBuilder.from(msg.embeds[0]);
-                        oldEmbed.setColor('#77dd77'); 
+                        // DESIGN-UPDATE: Sehr dunkles Grau statt Hellgrün
+                        oldEmbed.setColor('#2F3136'); 
                         oldEmbed.setTitle('✅ Abmeldung Beendet');
                         oldEmbed.setFooter({ text: 'Status: 🟢 Wieder da' });
                         
@@ -598,7 +603,8 @@ client.on('guildMemberAdd', async member => {
     statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
 
     const welcomeEmbed = new EmbedBuilder()
-        .setColor('#ff9900') 
+        // DESIGN-UPDATE: Reines Weiß statt Orange
+        .setColor('#FFFFFF') 
         .setDescription(`👋 **Willkommen** <@${member.id}>` + statsText)
         .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&');
 
@@ -620,6 +626,7 @@ client.on('guildMemberRemove', async member => {
     statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
 
     const leaveEmbed = new EmbedBuilder()
+        // Bereits Dunkelgrau, passt perfekt
         .setColor('#444444') 
         .setDescription(`👋 **Auf Wiedersehen** **${userName}**` + statsText)
         .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&');
