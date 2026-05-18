@@ -215,6 +215,10 @@ const commands = [
         options: [
             { name: 'mitglied', type: 6, description: 'Das Mitglied auswählen', required: true }
         ]
+    },
+    {
+        name: 'bestandkomplett',
+        description: 'Zeigt den gesamten Bestand aller Spinde zusammengerechnet (Admin-Befehl)'
     }
 ];
 
@@ -236,10 +240,12 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
+    // Sicherheitsprüfung für alle Befehle (Nur die erlaubte Leitungs-Rolle)
     if (!interaction.member.roles.cache.has('1393797458366042205')) {
         return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Befehl.', ephemeral: true });
     }
 
+    // --- LOGIK FÜR /einlagern UND /auslagern ---
     if (interaction.commandName === 'einlagern' || interaction.commandName === 'auslagern') {
         const targetMember = interaction.options.getMember('mitglied');
         const item = interaction.options.getString('item');
@@ -303,6 +309,7 @@ client.on('interactionCreate', async interaction => {
         }
     } 
     
+    // --- LOGIK FÜR /bestand ---
     else if (interaction.commandName === 'bestand') {
         const targetMember = interaction.options.getMember('mitglied');
         
@@ -340,6 +347,51 @@ client.on('interactionCreate', async interaction => {
         } catch (error) {
             console.error("Datenbank Fehler beim Bestand abrufen:", error);
             interaction.reply({ content: '❌ Fehler beim Abrufen der Datenbank.', ephemeral: true });
+        }
+    }
+
+    // --- NEUE LOGIK FÜR /bestandkomplett ---
+    else if (interaction.commandName === 'bestandkomplett') {
+        try {
+            // Holt ALLE Dokumente aus der Spind-Datenbank
+            const snapshot = await db.collection("lockers").get();
+            
+            if (snapshot.empty) {
+                return interaction.reply({ content: '🗄️ Es wurden noch überhaupt keine Gegenstände in Spinden registriert.' });
+            }
+
+            let totals = {};
+
+            // Wir loopen durch jeden einzelnen Spind und addieren die Zahlen im Hintergrund zusammen
+            snapshot.forEach(doc => {
+                const items = doc.data().items || {};
+                for (const [itemName, amount] of Object.entries(items)) {
+                    if (amount > 0) {
+                        totals[itemName] = (totals[itemName] || 0) + amount;
+                    }
+                }
+            });
+
+            let replyText = `📊 **Gesamter Fraktions-Bestand (Zusammengerechnet):**\n_Namen werden anonymisiert zusammengezählt_\n\n`;
+            let hasItems = false;
+
+            // Liste formatisieren
+            for (const [itemName, amount] of Object.entries(totals)) {
+                if (amount > 0) {
+                    replyText += `📦 **${amount}x** ${itemName}\n`;
+                    hasItems = true;
+                }
+            }
+
+            if (!hasItems) {
+                replyText = `🗄️ Alle Spinde der Fraktion sind aktuell komplett leer.`;
+            }
+
+            interaction.reply({ content: replyText });
+
+        } catch (error) {
+            console.error("Datenbank Fehler bei /bestandkomplett:", error);
+            interaction.reply({ content: '❌ Fehler beim Berechnen des Gesamtbestands.', ephemeral: true });
         }
     }
 });
