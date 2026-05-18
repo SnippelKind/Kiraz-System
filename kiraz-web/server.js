@@ -171,6 +171,183 @@ app.get('/dashboard', (req, res) => {
 app.listen(PORT, () => console.log(`Dashboard Server läuft auf Port ${PORT}`));
 
 
+require('dotenv').config();
+const express = require('express');
+const session = require('express-session');
+const axios = require('axios');
+const path = require('path');
+
+// --- Discord.js & Firebase Admin importieren ---
+const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
+const admin = require("firebase-admin");
+
+// --- Firebase Admin über Render Umgebungsvariable laden ---
+let serviceAccount;
+try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+} catch (error) {
+    console.error("KRITISCHER FEHLER: FIREBASE_CREDENTIALS ist leer oder fehlerhaft formatiert!");
+}
+
+if (admin.apps.length === 0) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+}
+const db = admin.firestore();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Fraktions IDs
+const REQUIRED_GUILD_ID = '1346576630751035533';
+const REQUIRED_ROLE_ID = '1365489886022467705';
+
+// Admin Rollen
+const ADMIN_ROLES = ['1393797458366042205', '1394457300693024838', '1500290272276381716'];
+
+// Leader Rollen
+const LEADER_ROLES = ['1484284804143906956', '1485002612372668557'];
+
+// Exakte Reihenfolge der Rollen-IDs für die Checkliste
+const RANK_ORDER = [
+    '1346576630767816869', '1346576630767816868', '1346576630767816867', 
+    '1346576630767816866', '1346576630751035542', '1346576630751035541', 
+    '1346576630751035540', '1346576630751035539', '1346576630751035538', 
+    '1346576630751035537', '1346576630751035536', '1393759494722293850', 
+    '1483760918511747223'
+];
+
+app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    next();
+});
+
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'geheimes-kiraz-passwort-123',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 1000 * 60 * 60 * 24 }
+}));
+
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+    if (req.session.isAuthorized) return res.redirect('/dashboard');
+    res.sendFile(path.join(__dirname, 'views', 'login.html'));
+});
+
+app.get('/login', (req, res) => {
+    const authorizeUrl = `https://discord.com/api/oauth2/authorize?client_id=${process.env.CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}&response_type=code&scope=identify%20guilds.members.read`;
+    res.redirect(authorizeUrl);
+});
+
+app.get('/logout', (req, res) => {
+    req.session.destroy(err => {
+        res.redirect('/'); 
+    });
+});
+
+app.get('/callback', async (req, res) => {
+    const code = req.query.code;
+    if (!code) return res.send('Kein Auth-Code erhalten.');
+
+    try {
+        const params = new URLSearchParams({
+            client_id: process.env.CLIENT_ID,
+            client_secret: process.env.CLIENT_SECRET,
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: process.env.REDIRECT_URI
+        });
+
+        const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', params.toString(), {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+
+        const accessToken = tokenResponse.data.access_token;
+        const memberResponse = await axios.get(`https://discord.com/api/users/@me/guilds/${REQUIRED_GUILD_ID}/member`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
+        const roles = memberResponse.data.roles; 
+        const displayName = memberResponse.data.nick || memberResponse.data.user.global_name || memberResponse.data.user.username;
+
+        if (roles.includes(REQUIRED_ROLE_ID)) {
+            req.session.isAuthorized = true; 
+            req.session.username = displayName; 
+            req.session.isAdmin = roles.some(role => ADMIN_ROLES.includes(role));
+            req.session.isLeader = roles.some(role => LEADER_ROLES.includes(role)); 
+            
+            res.redirect('/dashboard');
+        } else {
+            res.status(403).send('Zugriff verweigert.');
+        }
+    } catch (error) {
+        res.status(403).send('Fehler beim Login.');
+    }
+});
+
+app.get('/api/user', (req, res) => {
+    if (req.session.isAuthorized) {
+        res.json({ 
+            username: req.session.username,
+            isAdmin: req.session.isAdmin || false,
+            isLeader: req.session.isLeader || false 
+        });
+    } else {
+        res.status(401).json({ error: "Nicht eingeloggt" });
+    }
+});
+
+app.get('/api/faction-members', async (req, res) => {
+    if (!req.session.isLeader && !req.session.isAdmin) return res.status(403).json({ error: "Keine Rechte" });
+
+    try {
+        const [rolesRes, membersRes] = await Promise.all([
+            axios.get(`https://discord.com/api/guilds/${REQUIRED_GUILD_ID}/roles`, {
+                headers: { Authorization: `Bot ${process.env.BOT_TOKEN}` }
+            }),
+            axios.get(`https://discord.com/api/guilds/${REQUIRED_GUILD_ID}/members?limit=1000`, {
+                headers: { Authorization: `Bot ${process.env.BOT_TOKEN}` }
+            })
+        ]);
+
+        const rolesData = rolesRes.data;
+        const membersData = membersRes.data;
+        let factionMembers = [];
+
+        RANK_ORDER.forEach(roleId => {
+            const roleInfo = rolesData.find(r => r.id === roleId);
+            const roleName = roleInfo ? roleInfo.name : "Unbekannter Rang";
+            const peopleWithRole = membersData.filter(m => m.roles.includes(roleId));
+
+            peopleWithRole.forEach(p => {
+                if (!factionMembers.some(fm => fm.id === p.user.id)) {
+                    factionMembers.push({
+                        id: p.user.id,
+                        name: p.nick || p.user.global_name || p.user.username,
+                        rankId: roleId,
+                        rankName: roleName
+                    });
+                }
+            });
+        });
+
+        res.json(factionMembers);
+    } catch (err) {
+        res.status(500).json({ error: "Discord API Fehler" });
+    }
+});
+
+app.get('/dashboard', (req, res) => {
+    if (!req.session.isAuthorized) return res.redirect('/');
+    res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
+});
+
+app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));
+
+
 // ==========================================
 // DISCORD BOT & SLASH COMMANDS LOGIK
 // ==========================================
@@ -186,7 +363,6 @@ const spindItems = [
     { name: 'Abgesägte Schrottflinte', value: 'Abgesägte Schrottflinte' }
 ];
 
-// Die Definition der Befehle (Jetzt mit /bestand)
 const commands = [
     {
         name: 'einlagern',
@@ -218,7 +394,6 @@ const commands = [
 client.once('ready', async () => {
     console.log(`🤖 Bot eingeloggt als ${client.user.tag}`);
     
-    // Befehle automatisch auf dem Server registrieren
     const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
     try {
         await rest.put(
@@ -234,12 +409,10 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    // Nur User mit der spezifischen Admin-Rolle dürfen die Befehle ausführen
     if (!interaction.member.roles.cache.has('1393797458366042205')) {
         return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Befehl.', ephemeral: true });
     }
 
-    // --- LOGIK FÜR /einlagern UND /auslagern ---
     if (interaction.commandName === 'einlagern' || interaction.commandName === 'auslagern') {
         const targetMember = interaction.options.getMember('mitglied');
         const item = interaction.options.getString('item');
@@ -303,7 +476,6 @@ client.on('interactionCreate', async interaction => {
         }
     } 
     
-    // --- NEUE LOGIK FÜR /bestand ---
     else if (interaction.commandName === 'bestand') {
         const targetMember = interaction.options.getMember('mitglied');
         
@@ -317,7 +489,6 @@ client.on('interactionCreate', async interaction => {
         try {
             const doc = await docRef.get();
             
-            // Wenn es das Dokument noch gar nicht gibt
             if (!doc.exists) {
                 return interaction.reply({ content: `🗄️ Der Spind von **${targetName}** ist aktuell komplett leer.` });
             }
@@ -326,7 +497,6 @@ client.on('interactionCreate', async interaction => {
             let bestandText = `🗄️ **Spind-Bestand von ${targetName}:**\n\n`;
             let hasItems = false;
 
-            // Wir gehen alle Items durch und zeigen nur die an, von denen mehr als 0 da sind
             for (const [itemName, amount] of Object.entries(items)) {
                 if (amount > 0) {
                     bestandText += `📦 **${amount}x** ${itemName}\n`;
@@ -334,7 +504,6 @@ client.on('interactionCreate', async interaction => {
                 }
             }
 
-            // Wenn alle Items auf 0 stehen
             if (!hasItems) {
                 bestandText = `🗄️ Der Spind von **${targetName}** ist aktuell komplett leer.`;
             }
@@ -348,5 +517,4 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// Bot starten
 client.login(process.env.BOT_TOKEN);
