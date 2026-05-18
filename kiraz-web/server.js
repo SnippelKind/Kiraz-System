@@ -403,12 +403,20 @@ client.on('guildMemberAdd', async member => {
     const channel = member.guild.channels.cache.get(welcomeChannelId);
     if (!channel) return;
 
-    const welcomeEmbed = new EmbedBuilder()
+    // 1. Embed: Nur für das Banner ganz oben
+    const bannerEmbed = new EmbedBuilder()
         .setColor('#ff9900') 
         .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&')
-        .setDescription(`👋 **Willkommen** <@${member.id}>`);
+        .setURL('https://vindicta.com'); // Die URL verbindet die beiden Embeds optisch nahtlos
 
-    channel.send({ embeds: [welcomeEmbed] }).catch(console.error);
+    // 2. Embed: Für den Text direkt darunter
+    const textEmbed = new EmbedBuilder()
+        .setColor('#ff9900') 
+        .setDescription(`👋 **Willkommen** <@${member.id}>`)
+        .setURL('https://vindicta.com');
+
+    // Beide Embeds als Array [1, 2] in derselben Nachricht senden
+    channel.send({ embeds: [bannerEmbed, textEmbed] }).catch(console.error);
 });
 
 client.on('guildMemberRemove', async member => {
@@ -418,12 +426,20 @@ client.on('guildMemberRemove', async member => {
 
     const userName = member.nickname || member.user.globalName || member.user.username;
 
-    const leaveEmbed = new EmbedBuilder()
+    // 1. Embed: Nur für das Banner ganz oben
+    const bannerEmbed = new EmbedBuilder()
         .setColor('#444444') 
         .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&')
-        .setDescription(`👋 **Auf Wiedersehen** **${userName}**`);
+        .setURL('https://vindicta.com');
 
-    channel.send({ embeds: [leaveEmbed] }).catch(console.error);
+    // 2. Embed: Für den Text direkt darunter
+    const textEmbed = new EmbedBuilder()
+        .setColor('#444444') 
+        .setDescription(`👋 **Auf Wiedersehen** **${userName}**`)
+        .setURL('https://vindicta.com');
+
+    // Beide Embeds als Array [1, 2] in derselben Nachricht senden
+    channel.send({ embeds: [bannerEmbed, textEmbed] }).catch(console.error);
 });
 
 client.login(process.env.BOT_TOKEN);
