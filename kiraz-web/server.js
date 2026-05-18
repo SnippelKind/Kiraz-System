@@ -277,7 +277,7 @@ client.on('interactionCreate', async interaction => {
     const cmd = interaction.commandName;
     const isCreator = interaction.user.id === CREATOR_ID;
 
-    // ==========================================
+// ==========================================
     // SPIND BEFEHLE (Rolle: 1393797458366042205)
     // ==========================================
     if (['einlagern', 'auslagern', 'bestand', 'bestandkomplett'].includes(cmd)) {
@@ -285,13 +285,16 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Spind-Befehl.', ephemeral: true });
         }
 
+        // GIBT DEM BOT ZEIT: Erzeugt "Der Bot denkt nach..." und verhindert den 3-Sekunden Timeout Crash!
+        await interaction.deferReply();
+
         if (cmd === 'einlagern' || cmd === 'auslagern') {
             const targetMember = interaction.options.getMember('mitglied');
             const item = interaction.options.getString('item');
             const anzahl = interaction.options.getInteger('anzahl');
 
-            if (!targetMember) return interaction.reply({ content: '❌ Mitglied nicht gefunden.', ephemeral: true });
-            if (anzahl <= 0) return interaction.reply({ content: '❌ Anzahl muss > 0 sein.', ephemeral: true });
+            if (!targetMember) return interaction.editReply({ content: '❌ Mitglied nicht gefunden.' });
+            if (anzahl <= 0) return interaction.editReply({ content: '❌ Anzahl muss > 0 sein.' });
 
             const targetName = targetMember.displayName;
             const executorName = interaction.member.displayName;
@@ -318,11 +321,63 @@ client.on('interactionCreate', async interaction => {
                 const emoji = cmd === 'einlagern' ? '📥' : '📤';
                 let replyText = `${emoji} Erfolgreich **${anzahl}x ${item}** beim Spind von **${targetName}** ${actText}.\n📦 **Neuer Bestand:** ${newAmount}x`;
                 if (cmd === 'auslagern' && newAmount === 0) replyText += ` *(Hinweis: Evtl. nicht genug Items vorhanden).*`;
-                interaction.reply({ content: replyText });
+                
+                await interaction.editReply({ content: replyText });
             } catch (error) {
-                interaction.reply({ content: '❌ Datenbank-Fehler.', ephemeral: true });
+                await interaction.editReply({ content: '❌ Datenbank-Fehler.' });
             }
         } 
+        
+        else if (cmd === 'bestand') {
+            const targetMember = interaction.options.getMember('mitglied');
+            if (!targetMember) return interaction.editReply({ content: '❌ Mitglied nicht gefunden.' });
+
+            const targetName = targetMember.displayName;
+            try {
+                const doc = await db.collection("lockers").doc(targetName).get();
+                if (!doc.exists) return interaction.editReply({ content: `🗄️ Der Spind von **${targetName}** ist leer.` });
+
+                const items = doc.data().items || {};
+                let bestandText = `🗄️ **Spind-Bestand von ${targetName}:**\n\n`;
+                let hasItems = false;
+
+                for (const [itemName, amount] of Object.entries(items)) {
+                    if (amount > 0) { bestandText += `📦 **${amount}x** ${itemName}\n`; hasItems = true; }
+                }
+                if (!hasItems) bestandText = `🗄️ Der Spind von **${targetName}** ist komplett leer.`;
+                
+                await interaction.editReply({ content: bestandText });
+            } catch (error) {
+                await interaction.editReply({ content: '❌ Datenbank Fehler.' });
+            }
+        }
+
+        else if (cmd === 'bestandkomplett') {
+            try {
+                const snapshot = await db.collection("lockers").get();
+                if (snapshot.empty) return interaction.editReply({ content: '🗄️ Keine Gegenstände registriert.' });
+
+                let totals = {};
+                snapshot.forEach(doc => {
+                    const items = doc.data().items || {};
+                    for (const [itemName, amount] of Object.entries(items)) {
+                        if (amount > 0) totals[itemName] = (totals[itemName] || 0) + amount;
+                    }
+                });
+
+                let replyText = `📊 **Gesamter Fraktions-Bestand (Zusammengerechnet):**\n\n`;
+                let hasItems = false;
+                for (const [itemName, amount] of Object.entries(totals)) {
+                    if (amount > 0) { replyText += `📦 **${amount}x** ${itemName}\n`; hasItems = true; }
+                }
+                if (!hasItems) replyText = `🗄️ Alle Spinde leer.`;
+                
+                await interaction.editReply({ content: replyText });
+            } catch (error) {
+                await interaction.editReply({ content: '❌ Datenbank Fehler.' });
+            }
+        }
+    } 
         
         else if (cmd === 'bestand') {
             const targetMember = interaction.options.getMember('mitglied');
