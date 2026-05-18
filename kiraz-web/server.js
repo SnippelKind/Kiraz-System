@@ -5,7 +5,7 @@ const axios = require('axios');
 const path = require('path');
 
 // --- Discord.js & Firebase Admin importieren ---
-const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
 const admin = require("firebase-admin");
 
 // --- Firebase Admin über Render Umgebungsvariable laden ---
@@ -179,51 +179,11 @@ app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));
 // DISCORD BOT & SLASH COMMANDS LOGIK
 // ==========================================
 
-// --- Discord.js & Firebase Admin importieren ---
-const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
-
-// Bot Intents erweitern (GuildMembers ist wichtig für Join/Leave!)
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers 
+        GatewayIntentBits.GuildMembers
     ] 
-});
-
-// ==========================================
-// WILLKOMMEN & VERLASSEN EVENTS
-// ==========================================
-
-// Wenn jemand den Server betritt
-client.on('guildMemberAdd', async member => {
-    const welcomeChannelId = '1494060969578598512'; // Dein Willkommens-Channel
-    const channel = member.guild.channels.cache.get(welcomeChannelId);
-    if (!channel) return;
-
-    const welcomeEmbed = new EmbedBuilder()
-        .setColor('#ff9900') // Schönes Orange passend zum "Willkommen"
-        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&')
-        .setDescription(`👋 **Willkommen** <@${member.id}>`);
-
-    channel.send({ embeds: [welcomeEmbed] }).catch(console.error);
-});
-
-// Wenn jemand den Server verlässt
-client.on('guildMemberRemove', async member => {
-    const leaveChannelId = '1493332791574925392'; // Dein Verlassen-Channel
-    const channel = member.guild.channels.cache.get(leaveChannelId);
-    if (!channel) return;
-
-    // Da der User den Server verlassen hat, können wir ihn nicht mehr anpingen, 
-    // wir zeigen stattdessen seinen Namen fettgedruckt an.
-    const userName = member.nickname || member.user.globalName || member.user.username;
-
-    const leaveEmbed = new EmbedBuilder()
-        .setColor('#444444') // Dunklerer Ton fürs Verlassen (kannst du auch auf '#ff9900' ändern)
-        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&')
-        .setDescription(`👋 **Auf Wiedersehen** **${userName}**`);
-
-    channel.send({ embeds: [leaveEmbed] }).catch(console.error);
 });
 
 const spindItems = [
@@ -285,12 +245,10 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    // Sicherheitsprüfung für alle Befehle (Nur die erlaubte Leitungs-Rolle)
     if (!interaction.member.roles.cache.has('1393797458366042205')) {
         return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Befehl.', ephemeral: true });
     }
 
-    // --- LOGIK FÜR /einlagern UND /auslagern ---
     if (interaction.commandName === 'einlagern' || interaction.commandName === 'auslagern') {
         const targetMember = interaction.options.getMember('mitglied');
         const item = interaction.options.getString('item');
@@ -354,7 +312,6 @@ client.on('interactionCreate', async interaction => {
         }
     } 
     
-    // --- LOGIK FÜR /bestand ---
     else if (interaction.commandName === 'bestand') {
         const targetMember = interaction.options.getMember('mitglied');
         
@@ -395,10 +352,8 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- NEUE LOGIK FÜR /bestandkomplett ---
     else if (interaction.commandName === 'bestandkomplett') {
         try {
-            // Holt ALLE Dokumente aus der Spind-Datenbank
             const snapshot = await db.collection("lockers").get();
             
             if (snapshot.empty) {
@@ -407,7 +362,6 @@ client.on('interactionCreate', async interaction => {
 
             let totals = {};
 
-            // Wir loopen durch jeden einzelnen Spind und addieren die Zahlen im Hintergrund zusammen
             snapshot.forEach(doc => {
                 const items = doc.data().items || {};
                 for (const [itemName, amount] of Object.entries(items)) {
@@ -420,7 +374,6 @@ client.on('interactionCreate', async interaction => {
             let replyText = `📊 **Gesamter Fraktions-Bestand (Zusammengerechnet):**\n_Namen werden anonymisiert zusammengezählt_\n\n`;
             let hasItems = false;
 
-            // Liste formatisieren
             for (const [itemName, amount] of Object.entries(totals)) {
                 if (amount > 0) {
                     replyText += `📦 **${amount}x** ${itemName}\n`;
@@ -439,6 +392,38 @@ client.on('interactionCreate', async interaction => {
             interaction.reply({ content: '❌ Fehler beim Berechnen des Gesamtbestands.', ephemeral: true });
         }
     }
+});
+
+// ==========================================
+// WILLKOMMEN & VERLASSEN EVENTS
+// ==========================================
+
+client.on('guildMemberAdd', async member => {
+    const welcomeChannelId = '1494060969578598512'; 
+    const channel = member.guild.channels.cache.get(welcomeChannelId);
+    if (!channel) return;
+
+    const welcomeEmbed = new EmbedBuilder()
+        .setColor('#ff9900') 
+        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&')
+        .setDescription(`👋 **Willkommen** <@${member.id}>`);
+
+    channel.send({ embeds: [welcomeEmbed] }).catch(console.error);
+});
+
+client.on('guildMemberRemove', async member => {
+    const leaveChannelId = '1493332791574925392'; 
+    const channel = member.guild.channels.cache.get(leaveChannelId);
+    if (!channel) return;
+
+    const userName = member.nickname || member.user.globalName || member.user.username;
+
+    const leaveEmbed = new EmbedBuilder()
+        .setColor('#444444') 
+        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&')
+        .setDescription(`👋 **Auf Wiedersehen** **${userName}**`);
+
+    channel.send({ embeds: [leaveEmbed] }).catch(console.error);
 });
 
 client.login(process.env.BOT_TOKEN);
