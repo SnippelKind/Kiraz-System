@@ -403,10 +403,18 @@ client.on('guildMemberAdd', async member => {
     const channel = member.guild.channels.cache.get(welcomeChannelId);
     if (!channel) return;
 
+    // Discord Timestamps berechnen (für die "vor X Tagen" Anzeige)
+    const joinedUnix = member.joinedTimestamp ? Math.floor(member.joinedTimestamp / 1000) : null;
+    const createdUnix = member.user.createdTimestamp ? Math.floor(member.user.createdTimestamp / 1000) : null;
+
+    let statsText = "\n\n**User-Stats:**\n";
+    statsText += `> 📥 Gejoint: ${joinedUnix ? `<t:${joinedUnix}:F> (<t:${joinedUnix}:R>)` : 'Unbekannt'}\n`;
+    statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
+
     const welcomeEmbed = new EmbedBuilder()
         .setColor('#ff9900') 
-        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&')
-        .setDescription(`👋 **Willkommen** <@${member.id}>`);
+        .setDescription(`👋 **Willkommen** <@${member.id}>` + statsText)
+        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&');
 
     channel.send({ embeds: [welcomeEmbed] }).catch(console.error);
 });
@@ -418,10 +426,18 @@ client.on('guildMemberRemove', async member => {
 
     const userName = member.nickname || member.user.globalName || member.user.username;
 
+    // Bei Verlassen wissen wir das "Verlassen"-Datum, also nehmen wir einfach das aktuelle Datum
+    const leftUnix = Math.floor(Date.now() / 1000);
+    const createdUnix = member.user.createdTimestamp ? Math.floor(member.user.createdTimestamp / 1000) : null;
+
+    let statsText = "\n\n**User-Stats:**\n";
+    statsText += `> 📤 Verlassen: <t:${leftUnix}:F> (<t:${leftUnix}:R>)\n`;
+    statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
+
     const leaveEmbed = new EmbedBuilder()
         .setColor('#444444') 
-        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&')
-        .setDescription(`👋 **Auf Wiedersehen** **${userName}**`);
+        .setDescription(`👋 **Auf Wiedersehen** **${userName}**` + statsText)
+        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&');
 
     channel.send({ embeds: [leaveEmbed] }).catch(console.error);
 });
