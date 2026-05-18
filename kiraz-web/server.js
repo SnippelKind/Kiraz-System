@@ -186,7 +186,7 @@ const spindItems = [
     { name: 'Abgesägte Schrottflinte', value: 'Abgesägte Schrottflinte' }
 ];
 
-// Die Definition der Befehle
+// Die Definition der Befehle (Jetzt mit /bestand)
 const commands = [
     {
         name: 'einlagern',
@@ -204,6 +204,13 @@ const commands = [
             { name: 'mitglied', type: 6, description: 'Das Mitglied auswählen', required: true },
             { name: 'item', type: 3, description: 'Welches Item?', required: true, choices: spindItems },
             { name: 'anzahl', type: 4, description: 'Wie viele?', required: true }
+        ]
+    },
+    {
+        name: 'bestand',
+        description: 'Zeigt den aktuellen Spind-Bestand eines Mitglieds (Admin-Befehl)',
+        options: [
+            { name: 'mitglied', type: 6, description: 'Das Mitglied auswählen', required: true }
         ]
     }
 ];
@@ -232,11 +239,12 @@ client.on('interactionCreate', async interaction => {
         return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Befehl.', ephemeral: true });
     }
 
+    // --- LOGIK FÜR /einlagern UND /auslagern ---
     if (interaction.commandName === 'einlagern' || interaction.commandName === 'auslagern') {
         const targetMember = interaction.options.getMember('mitglied');
         const item = interaction.options.getString('item');
         const anzahl = interaction.options.getInteger('anzahl');
-        const action = interaction.commandName; // 'einlagern' oder 'auslagern'
+        const action = interaction.commandName; 
 
         if (!targetMember) {
             return interaction.reply({ content: '❌ Mitglied konnte nicht gefunden werden.', ephemeral: true });
@@ -246,14 +254,12 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ Die Anzahl muss größer als 0 sein.', ephemeral: true });
         }
 
-        // NUTZT displayName: Das ist in Discord.js exakt dasselbe wie (Nickname || GlobalName || Username) aus dem Web-Panel
         const targetName = targetMember.displayName;
         const executorName = interaction.member.displayName;
         
         const docRef = db.collection("lockers").doc(targetName);
 
         try {
-            // Wir lassen uns den neuen Bestand aus der Transaktion zurückgeben
             const newAmount = await db.runTransaction(async (t) => {
                 const doc = await t.get(docRef);
                 let items = {};
@@ -271,10 +277,9 @@ client.on('interactionCreate', async interaction => {
                 items[item] = updatedAmount;
                 t.set(docRef, { items: items }, { merge: true });
 
-                return updatedAmount; // Gibt den berechneten Wert nach außen
+                return updatedAmount; 
             });
 
-            // Aktion im System Protokoll speichern
             let actText = action === 'einlagern' ? 'eingelagert' : 'entnommen';
             await db.collection("logs").add({
                 user: executorName,
@@ -283,11 +288,9 @@ client.on('interactionCreate', async interaction => {
                 timestamp: admin.firestore.FieldValue.serverTimestamp()
             });
 
-            // Erweiterte Antwort in Discord, die den neuen Bestand verrät!
             const emoji = action === 'einlagern' ? '📥' : '📤';
             let replyText = `${emoji} Erfolgreich **${anzahl}x ${item}** beim Spind von **${targetName}** ${actText}.\n📦 **Neuer Bestand:** ${newAmount}x`;
             
-            // Kleiner Hinweis, falls man mehr auslagern wollte, als der User besaß
             if (action === 'auslagern' && newAmount === 0) {
                 replyText += ` *(Hinweis: Der Spind hatte evtl. nicht genug Items, daher steht er jetzt bei 0).*`;
             }
@@ -297,6 +300,50 @@ client.on('interactionCreate', async interaction => {
         } catch (error) {
             console.error("Datenbank Fehler beim Slash-Command:", error);
             interaction.reply({ content: '❌ Es gab einen Datenbank-Fehler beim Verarbeiten des Befehls.', ephemeral: true });
+        }
+    } 
+    
+    // --- NEUE LOGIK FÜR /bestand ---
+    else if (interaction.commandName === 'bestand') {
+        const targetMember = interaction.options.getMember('mitglied');
+        
+        if (!targetMember) {
+            return interaction.reply({ content: '❌ Mitglied konnte nicht gefunden werden.', ephemeral: true });
+        }
+
+        const targetName = targetMember.displayName;
+        const docRef = db.collection("lockers").doc(targetName);
+
+        try {
+            const doc = await docRef.get();
+            
+            // Wenn es das Dokument noch gar nicht gibt
+            if (!doc.exists) {
+                return interaction.reply({ content: `🗄️ Der Spind von **${targetName}** ist aktuell komplett leer.` });
+            }
+
+            const items = doc.data().items || {};
+            let bestandText = `🗄️ **Spind-Bestand von ${targetName}:**\n\n`;
+            let hasItems = false;
+
+            // Wir gehen alle Items durch und zeigen nur die an, von denen mehr als 0 da sind
+            for (const [itemName, amount] of Object.entries(items)) {
+                if (amount > 0) {
+                    bestandText += `📦 **${amount}x** ${itemName}\n`;
+                    hasItems = true;
+                }
+            }
+
+            // Wenn alle Items auf 0 stehen
+            if (!hasItems) {
+                bestandText = `🗄️ Der Spind von **${targetName}** ist aktuell komplett leer.`;
+            }
+
+            interaction.reply({ content: bestandText });
+
+        } catch (error) {
+            console.error("Datenbank Fehler beim Bestand abrufen:", error);
+            interaction.reply({ content: '❌ Fehler beim Abrufen der Datenbank.', ephemeral: true });
         }
     }
 });
