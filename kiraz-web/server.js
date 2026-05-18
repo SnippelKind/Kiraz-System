@@ -198,7 +198,7 @@ const spindItems = [
 const commands = [
     {
         name: 'einlagern',
-        description: 'Legt Items in den Spind eines Mitglieds (Admin-Befehl)',
+        description: 'Legt Items in den Spind eines Mitglieds (Admin)',
         options: [
             { name: 'mitglied', type: 6, description: 'Das Mitglied auswählen', required: true },
             { name: 'item', type: 3, description: 'Welches Item?', required: true, choices: spindItems },
@@ -207,7 +207,7 @@ const commands = [
     },
     {
         name: 'auslagern',
-        description: 'Nimmt Items aus dem Spind eines Mitglieds (Admin-Befehl)',
+        description: 'Nimmt Items aus dem Spind eines Mitglieds (Admin)',
         options: [
             { name: 'mitglied', type: 6, description: 'Das Mitglied auswählen', required: true },
             { name: 'item', type: 3, description: 'Welches Item?', required: true, choices: spindItems },
@@ -216,14 +216,37 @@ const commands = [
     },
     {
         name: 'bestand',
-        description: 'Zeigt den aktuellen Spind-Bestand eines Mitglieds (Admin-Befehl)',
+        description: 'Zeigt den aktuellen Spind-Bestand eines Mitglieds (Admin)',
         options: [
             { name: 'mitglied', type: 6, description: 'Das Mitglied auswählen', required: true }
         ]
     },
     {
         name: 'bestandkomplett',
-        description: 'Zeigt den gesamten Bestand aller Spinde zusammengerechnet (Admin-Befehl)'
+        description: 'Zeigt den gesamten Bestand aller Spinde zusammengerechnet (Admin)'
+    },
+    {
+        name: 'sanktion',
+        description: 'Stellt eine Sanktion aus (Nur berechtigte Leitung)',
+        options: [
+            { name: 'mitglied', type: 6, description: 'Das zu sanktionierende Mitglied', required: true },
+            { name: 'grund', type: 3, description: 'Grund für die Sanktion', required: true },
+            { name: 'betrag', type: 4, description: 'Betrag in € (nur die Zahl)', required: true },
+            { name: 'datum', type: 3, description: 'Bis wann muss bezahlt werden?', required: true }
+        ]
+    },
+    {
+        name: 'abmeldung',
+        description: 'Meldet ein Mitglied ab',
+        options: [
+            { name: 'mitglied', type: 6, description: 'Welches Mitglied meldet sich ab?', required: true },
+            { name: 'grund', type: 3, description: 'Grund der Abmeldung', required: true },
+            { name: 'bis_wann', type: 3, description: 'Bis wann? (WICHTIG: Format TT.MM.JJJJ z.B. 24.12.2026)', required: true }
+        ]
+    },
+    {
+        name: 'abgemeldet',
+        description: 'Zeigt eine Liste aller aktuell Abgemeldeten'
     }
 ];
 
@@ -245,154 +268,262 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    if (!interaction.member.roles.cache.has('1393797458366042205')) {
-        return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Befehl.', ephemeral: true });
-    }
+    const cmd = interaction.commandName;
 
-    if (interaction.commandName === 'einlagern' || interaction.commandName === 'auslagern') {
-        const targetMember = interaction.options.getMember('mitglied');
-        const item = interaction.options.getString('item');
-        const anzahl = interaction.options.getInteger('anzahl');
-        const action = interaction.commandName; 
-
-        if (!targetMember) {
-            return interaction.reply({ content: '❌ Mitglied konnte nicht gefunden werden.', ephemeral: true });
+    // ==========================================
+    // SPIND BEFEHLE (Rolle: 1393797458366042205)
+    // ==========================================
+    if (['einlagern', 'auslagern', 'bestand', 'bestandkomplett'].includes(cmd)) {
+        if (!interaction.member.roles.cache.has('1393797458366042205')) {
+            return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Spind-Befehl.', ephemeral: true });
         }
 
-        if (anzahl <= 0) {
-            return interaction.reply({ content: '❌ Die Anzahl muss größer als 0 sein.', ephemeral: true });
-        }
+        if (cmd === 'einlagern' || cmd === 'auslagern') {
+            const targetMember = interaction.options.getMember('mitglied');
+            const item = interaction.options.getString('item');
+            const anzahl = interaction.options.getInteger('anzahl');
 
-        const targetName = targetMember.displayName;
-        const executorName = interaction.member.displayName;
+            if (!targetMember) return interaction.reply({ content: '❌ Mitglied nicht gefunden.', ephemeral: true });
+            if (anzahl <= 0) return interaction.reply({ content: '❌ Anzahl muss > 0 sein.', ephemeral: true });
+
+            const targetName = targetMember.displayName;
+            const executorName = interaction.member.displayName;
+            const docRef = db.collection("lockers").doc(targetName);
+
+            try {
+                const newAmount = await db.runTransaction(async (t) => {
+                    const doc = await t.get(docRef);
+                    let items = doc.exists ? doc.data().items || {} : {};
+                    let currentAmount = items[item] || 0;
+                    let updatedAmount = cmd === 'einlagern' ? currentAmount + anzahl : Math.max(0, currentAmount - anzahl);
+                    items[item] = updatedAmount;
+                    t.set(docRef, { items: items }, { merge: true });
+                    return updatedAmount; 
+                });
+
+                let actText = cmd === 'einlagern' ? 'eingelagert' : 'entnommen';
+                await db.collection("logs").add({
+                    user: executorName, action: `Discord Bot (/${cmd})`,
+                    details: `${anzahl}x ${item} bei ${targetName} ${actText}.`,
+                    timestamp: admin.firestore.FieldValue.serverTimestamp()
+                });
+
+                const emoji = cmd === 'einlagern' ? '📥' : '📤';
+                let replyText = `${emoji} Erfolgreich **${anzahl}x ${item}** beim Spind von **${targetName}** ${actText}.\n📦 **Neuer Bestand:** ${newAmount}x`;
+                if (cmd === 'auslagern' && newAmount === 0) replyText += ` *(Hinweis: Evtl. nicht genug Items vorhanden).*`;
+                interaction.reply({ content: replyText });
+            } catch (error) {
+                interaction.reply({ content: '❌ Datenbank-Fehler.', ephemeral: true });
+            }
+        } 
         
-        const docRef = db.collection("lockers").doc(targetName);
+        else if (cmd === 'bestand') {
+            const targetMember = interaction.options.getMember('mitglied');
+            if (!targetMember) return interaction.reply({ content: '❌ Mitglied nicht gefunden.', ephemeral: true });
 
-        try {
-            const newAmount = await db.runTransaction(async (t) => {
-                const doc = await t.get(docRef);
-                let items = {};
-                if (doc.exists) items = doc.data().items || {};
+            const targetName = targetMember.displayName;
+            try {
+                const doc = await db.collection("lockers").doc(targetName).get();
+                if (!doc.exists) return interaction.reply({ content: `🗄️ Der Spind von **${targetName}** ist leer.` });
 
-                let currentAmount = items[item] || 0;
-                let updatedAmount = 0;
+                const items = doc.data().items || {};
+                let bestandText = `🗄️ **Spind-Bestand von ${targetName}:**\n\n`;
+                let hasItems = false;
 
-                if (action === 'einlagern') {
-                    updatedAmount = currentAmount + anzahl;
-                } else if (action === 'auslagern') {
-                    updatedAmount = Math.max(0, currentAmount - anzahl);
+                for (const [itemName, amount] of Object.entries(items)) {
+                    if (amount > 0) { bestandText += `📦 **${amount}x** ${itemName}\n`; hasItems = true; }
                 }
-
-                items[item] = updatedAmount;
-                t.set(docRef, { items: items }, { merge: true });
-
-                return updatedAmount; 
-            });
-
-            let actText = action === 'einlagern' ? 'eingelagert' : 'entnommen';
-            await db.collection("logs").add({
-                user: executorName,
-                action: `Discord Bot (/${action})`,
-                details: `${anzahl}x ${item} bei ${targetName} ${actText}.`,
-                timestamp: admin.firestore.FieldValue.serverTimestamp()
-            });
-
-            const emoji = action === 'einlagern' ? '📥' : '📤';
-            let replyText = `${emoji} Erfolgreich **${anzahl}x ${item}** beim Spind von **${targetName}** ${actText}.\n📦 **Neuer Bestand:** ${newAmount}x`;
-            
-            if (action === 'auslagern' && newAmount === 0) {
-                replyText += ` *(Hinweis: Der Spind hatte evtl. nicht genug Items, daher steht er jetzt bei 0).*`;
+                if (!hasItems) bestandText = `🗄️ Der Spind von **${targetName}** ist komplett leer.`;
+                interaction.reply({ content: bestandText });
+            } catch (error) {
+                interaction.reply({ content: '❌ Datenbank Fehler.', ephemeral: true });
             }
-
-            interaction.reply({ content: replyText });
-
-        } catch (error) {
-            console.error("Datenbank Fehler beim Slash-Command:", error);
-            interaction.reply({ content: '❌ Es gab einen Datenbank-Fehler beim Verarbeiten des Befehls.', ephemeral: true });
-        }
-    } 
-    
-    else if (interaction.commandName === 'bestand') {
-        const targetMember = interaction.options.getMember('mitglied');
-        
-        if (!targetMember) {
-            return interaction.reply({ content: '❌ Mitglied konnte nicht gefunden werden.', ephemeral: true });
         }
 
-        const targetName = targetMember.displayName;
-        const docRef = db.collection("lockers").doc(targetName);
+        else if (cmd === 'bestandkomplett') {
+            try {
+                const snapshot = await db.collection("lockers").get();
+                if (snapshot.empty) return interaction.reply({ content: '🗄️ Keine Gegenstände registriert.' });
 
-        try {
-            const doc = await docRef.get();
-            
-            if (!doc.exists) {
-                return interaction.reply({ content: `🗄️ Der Spind von **${targetName}** ist aktuell komplett leer.` });
-            }
+                let totals = {};
+                snapshot.forEach(doc => {
+                    const items = doc.data().items || {};
+                    for (const [itemName, amount] of Object.entries(items)) {
+                        if (amount > 0) totals[itemName] = (totals[itemName] || 0) + amount;
+                    }
+                });
 
-            const items = doc.data().items || {};
-            let bestandText = `🗄️ **Spind-Bestand von ${targetName}:**\n\n`;
-            let hasItems = false;
-
-            for (const [itemName, amount] of Object.entries(items)) {
-                if (amount > 0) {
-                    bestandText += `📦 **${amount}x** ${itemName}\n`;
-                    hasItems = true;
+                let replyText = `📊 **Gesamter Fraktions-Bestand (Zusammengerechnet):**\n\n`;
+                let hasItems = false;
+                for (const [itemName, amount] of Object.entries(totals)) {
+                    if (amount > 0) { replyText += `📦 **${amount}x** ${itemName}\n`; hasItems = true; }
                 }
+                if (!hasItems) replyText = `🗄️ Alle Spinde leer.`;
+                interaction.reply({ content: replyText });
+            } catch (error) {
+                interaction.reply({ content: '❌ Datenbank Fehler.', ephemeral: true });
             }
-
-            if (!hasItems) {
-                bestandText = `🗄️ Der Spind von **${targetName}** ist aktuell komplett leer.`;
-            }
-
-            interaction.reply({ content: bestandText });
-
-        } catch (error) {
-            console.error("Datenbank Fehler beim Bestand abrufen:", error);
-            interaction.reply({ content: '❌ Fehler beim Abrufen der Datenbank.', ephemeral: true });
         }
     }
 
-    else if (interaction.commandName === 'bestandkomplett') {
+    // ==========================================
+    // SANKTION BEFEHL (Rolle: 1500290272276381716)
+    // ==========================================
+    if (cmd === 'sanktion') {
+        if (!interaction.member.roles.cache.has('1500290272276381716')) {
+            return interaction.reply({ content: '❌ Du hast keine Berechtigung, Sanktionen auszustellen.', ephemeral: true });
+        }
+
+        const targetMember = interaction.options.getMember('mitglied');
+        const grund = interaction.options.getString('grund');
+        const betrag = interaction.options.getInteger('betrag');
+        const datum = interaction.options.getString('datum');
+
+        if (!targetMember) return interaction.reply({ content: '❌ Mitglied nicht gefunden.', ephemeral: true });
+
+        const sanktionEmbed = new EmbedBuilder()
+            .setColor('#ff3333')
+            .setTitle('⚖️ Fraktions-Sanktion')
+            .setThumbnail(targetMember.user.displayAvatarURL({ dynamic: true }))
+            .addFields(
+                { name: '👤 Mitglied', value: `<@${targetMember.id}>`, inline: true },
+                { name: '💰 Betrag', value: `${betrag.toLocaleString('de-DE')} €`, inline: true },
+                { name: '📅 Zahlbar bis', value: datum, inline: false },
+                { name: '📝 Grund', value: grund, inline: false },
+                { name: '🏦 Zahlung an', value: `Bitte den Betrag zeitnah an die <@&1500290272276381716> zahlen!`, inline: false }
+            )
+            .setFooter({ text: `Ausgestellt von ${interaction.member.displayName}` })
+            .setTimestamp();
+
+        interaction.reply({ embeds: [sanktionEmbed] });
+    }
+
+    // ==========================================
+    // ABMELDUNG BEFEHLE (Rolle: 1365489886022467705)
+    // ==========================================
+    if (cmd === 'abmeldung') {
+        if (!interaction.member.roles.cache.has('1365489886022467705')) {
+            return interaction.reply({ content: '❌ Du hast keine Berechtigung für Abmeldungen.', ephemeral: true });
+        }
+
+        const targetMember = interaction.options.getMember('mitglied');
+        const grund = interaction.options.getString('grund');
+        const bisWann = interaction.options.getString('bis_wann');
+
+        // Datum auslesen (Erwartet DD.MM.YYYY)
+        const dateRegex = /^(\d{2})\.(\d{2})\.(\d{4})$/;
+        const match = bisWann.match(dateRegex);
+        
+        if (!match) {
+            return interaction.reply({ content: '❌ **Fehler:** Bitte das Datum exakt im Format `TT.MM.JJJJ` eingeben (z.B. `24.12.2026`). Sonst funktioniert die Automatik nicht!', ephemeral: true });
+        }
+
+        // Setzt das Ablaufdatum auf 23:59:59 Uhr des angegebenen Tages
+        const parsedDate = new Date(`${match[3]}-${match[2]}-${match[1]}T23:59:59`);
+        const untilTimestamp = parsedDate.getTime();
+
+        const abmeldungEmbed = new EmbedBuilder()
+            .setColor('#ffcc00')
+            .setTitle('🏖️ Neue Abmeldung')
+            .addFields(
+                { name: '👤 Mitglied', value: `<@${targetMember.id}>`, inline: true },
+                { name: '📅 Bis einschließlich', value: bisWann, inline: true },
+                { name: '📝 Grund', value: grund, inline: false }
+            )
+            .setFooter({ text: 'Status: 🟡 Aktiv' });
+
+        // Nachricht senden und danach in Firebase speichern (für den Auto-Check)
+        const reply = await interaction.reply({ embeds: [abmeldungEmbed], fetchReply: true });
+
+        await db.collection('abmeldungen').add({
+            userId: targetMember.id,
+            userName: targetMember.displayName,
+            reason: grund,
+            untilDateString: bisWann,
+            untilTimestamp: untilTimestamp,
+            messageId: reply.id,
+            channelId: interaction.channelId
+        });
+    }
+
+    if (cmd === 'abgemeldet') {
+        // Erlaubt für beide genannten Rollen
+        if (!interaction.member.roles.cache.has('1365489886022467705') && !interaction.member.roles.cache.has('1500290272276381716')) {
+            return interaction.reply({ content: '❌ Du hast keine Berechtigung.', ephemeral: true });
+        }
+
         try {
-            const snapshot = await db.collection("lockers").get();
+            const snapshot = await db.collection('abmeldungen').orderBy('untilTimestamp', 'asc').get();
             
             if (snapshot.empty) {
-                return interaction.reply({ content: '🗄️ Es wurden noch überhaupt keine Gegenstände in Spinden registriert.' });
+                return interaction.reply({ content: '✅ Aktuell ist niemand abgemeldet.' });
             }
 
-            let totals = {};
+            const listEmbed = new EmbedBuilder()
+                .setColor('#3498db')
+                .setTitle('📋 Aktuelle Abmeldungen');
 
+            let count = 0;
             snapshot.forEach(doc => {
-                const items = doc.data().items || {};
-                for (const [itemName, amount] of Object.entries(items)) {
-                    if (amount > 0) {
-                        totals[itemName] = (totals[itemName] || 0) + amount;
-                    }
-                }
+                const data = doc.data();
+                listEmbed.addFields({ 
+                    name: `👤 ${data.userName}`, 
+                    value: `Bis: **${data.untilDateString}**\nGrund: *${data.reason}*` 
+                });
+                count++;
             });
 
-            let replyText = `📊 **Gesamter Fraktions-Bestand (Zusammengerechnet):**\n_Namen werden anonymisiert zusammengezählt_\n\n`;
-            let hasItems = false;
-
-            for (const [itemName, amount] of Object.entries(totals)) {
-                if (amount > 0) {
-                    replyText += `📦 **${amount}x** ${itemName}\n`;
-                    hasItems = true;
-                }
-            }
-
-            if (!hasItems) {
-                replyText = `🗄️ Alle Spinde der Fraktion sind aktuell komplett leer.`;
-            }
-
-            interaction.reply({ content: replyText });
+            listEmbed.setDescription(`Es sind aktuell **${count}** Mitglieder abgemeldet.`);
+            interaction.reply({ embeds: [listEmbed] });
 
         } catch (error) {
-            console.error("Datenbank Fehler bei /bestandkomplett:", error);
-            interaction.reply({ content: '❌ Fehler beim Berechnen des Gesamtbestands.', ephemeral: true });
+            console.error("Fehler bei /abgemeldet:", error);
+            interaction.reply({ content: '❌ Datenbank Fehler.', ephemeral: true });
         }
     }
 });
+
+
+// ==========================================
+// AUTO-CHECK FÜR ABGELAUFENE ABMELDUNGEN
+// ==========================================
+async function checkAbmeldungen() {
+    try {
+        const now = Date.now();
+        // Suche alle Abmeldungen, deren Enddatum in der Vergangenheit liegt
+        const snapshot = await db.collection('abmeldungen').where('untilTimestamp', '<', now).get();
+        
+        snapshot.forEach(async doc => {
+            const data = doc.data();
+            try {
+                // Suche den Channel und die Nachricht auf Discord
+                const channel = await client.channels.fetch(data.channelId);
+                if (channel) {
+                    const msg = await channel.messages.fetch(data.messageId);
+                    if (msg && msg.embeds.length > 0) {
+                        // Passe das Embed an
+                        const oldEmbed = EmbedBuilder.from(msg.embeds[0]);
+                        oldEmbed.setColor('#77dd77'); // Grün machen
+                        oldEmbed.setTitle('✅ Abmeldung Beendet');
+                        oldEmbed.setFooter({ text: 'Status: 🟢 Wieder da' });
+                        
+                        await msg.edit({ embeds: [oldEmbed] });
+                    }
+                }
+            } catch(e) {
+                console.log(`Konnte Nachricht für abgelaufene Abmeldung nicht updaten (vllt gelöscht): ${e.message}`);
+            }
+            // Lösche den Eintrag aus der Datenbank, da er abgelaufen ist
+            await db.collection('abmeldungen').doc(doc.id).delete();
+        });
+    } catch (error) {
+        console.error("Fehler im Abmeldungs-Checker:", error);
+    }
+}
+
+// Der Bot prüft alle 30 Minuten (30 * 60 * 1000 ms), ob Abmeldungen abgelaufen sind
+setInterval(checkAbmeldungen, 30 * 60 * 1000);
+
 
 // ==========================================
 // WILLKOMMEN & VERLASSEN EVENTS
@@ -403,20 +534,19 @@ client.on('guildMemberAdd', async member => {
     const channel = member.guild.channels.cache.get(welcomeChannelId);
     if (!channel) return;
 
-    // Discord Timestamps berechnen (für die "vor X Tagen" Anzeige)
-    const joinedUnix = member.joinedTimestamp ? Math.floor(member.joinedTimestamp / 1000) : null;
-    const createdUnix = member.user.createdTimestamp ? Math.floor(member.user.createdTimestamp / 1000) : null;
-
-    let statsText = "\n\n**User-Stats:**\n";
-    statsText += `> 📥 Gejoint: ${joinedUnix ? `<t:${joinedUnix}:F> (<t:${joinedUnix}:R>)` : 'Unbekannt'}\n`;
-    statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
-
-    const welcomeEmbed = new EmbedBuilder()
+    // 1. Embed: Nur für das Banner ganz oben
+    const bannerEmbed = new EmbedBuilder()
         .setColor('#ff9900') 
-        .setDescription(`👋 **Willkommen** <@${member.id}>` + statsText)
-        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&');
+        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&')
+        .setURL('https://vindicta.com');
 
-    channel.send({ embeds: [welcomeEmbed] }).catch(console.error);
+    // 2. Embed: Für den Text direkt darunter
+    const textEmbed = new EmbedBuilder()
+        .setColor('#ff9900') 
+        .setDescription(`👋 **Willkommen** <@${member.id}>`)
+        .setURL('https://vindicta.com');
+
+    channel.send({ embeds: [bannerEmbed, textEmbed] }).catch(console.error);
 });
 
 client.on('guildMemberRemove', async member => {
@@ -426,20 +556,19 @@ client.on('guildMemberRemove', async member => {
 
     const userName = member.nickname || member.user.globalName || member.user.username;
 
-    // Bei Verlassen wissen wir das "Verlassen"-Datum, also nehmen wir einfach das aktuelle Datum
-    const leftUnix = Math.floor(Date.now() / 1000);
-    const createdUnix = member.user.createdTimestamp ? Math.floor(member.user.createdTimestamp / 1000) : null;
-
-    let statsText = "\n\n**User-Stats:**\n";
-    statsText += `> 📤 Verlassen: <t:${leftUnix}:F> (<t:${leftUnix}:R>)\n`;
-    statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
-
-    const leaveEmbed = new EmbedBuilder()
+    // 1. Embed: Nur für das Banner ganz oben
+    const bannerEmbed = new EmbedBuilder()
         .setColor('#444444') 
-        .setDescription(`👋 **Auf Wiedersehen** **${userName}**` + statsText)
-        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&');
+        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&')
+        .setURL('https://vindicta.com');
 
-    channel.send({ embeds: [leaveEmbed] }).catch(console.error);
+    // 2. Embed: Für den Text direkt darunter
+    const textEmbed = new EmbedBuilder()
+        .setColor('#444444') 
+        .setDescription(`👋 **Auf Wiedersehen** **${userName}**`)
+        .setURL('https://vindicta.com');
+
+    channel.send({ embeds: [bannerEmbed, textEmbed] }).catch(console.error);
 });
 
 client.login(process.env.BOT_TOKEN);
