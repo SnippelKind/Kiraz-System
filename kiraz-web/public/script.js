@@ -1056,6 +1056,7 @@ function checkoutCart() {
         alert("Bestellung erfolgreich aufgegeben! Der Einkauf wurde im Protokoll vermerkt.");
     }
 }
+renderShop();
 let currentSelectedMarkerIndex = null;
 
 db.collection("markers").onSnapshot((querySnapshot) => {
