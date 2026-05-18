@@ -26,14 +26,13 @@ const db = admin.firestore();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Fraktions IDs
+// --- EINSTELLUNGEN ---
+const CREATOR_ID = '444942593864761369'; // DEINE ID (Hat immer alle Rechte!)
 const REQUIRED_GUILD_ID = '1346576630751035533';
 const REQUIRED_ROLE_ID = '1365489886022467705';
 
-// Admin Rollen
+// Admin / Leader Rollen
 const ADMIN_ROLES = ['1393797458366042205', '1394457300693024838', '1500290272276381716'];
-
-// Leader Rollen
 const LEADER_ROLES = ['1484284804143906956', '1485002612372668557'];
 
 // Exakte Reihenfolge der Rollen-IDs für die Checkliste
@@ -99,12 +98,17 @@ app.get('/callback', async (req, res) => {
 
         const roles = memberResponse.data.roles; 
         const displayName = memberResponse.data.nick || memberResponse.data.user.global_name || memberResponse.data.user.username;
+        const userId = memberResponse.data.user.id;
+        
+        const isCreator = userId === CREATOR_ID;
 
-        if (roles.includes(REQUIRED_ROLE_ID)) {
+        // Der Creator kommt immer rein, andere brauchen die Fraktionsrolle
+        if (roles.includes(REQUIRED_ROLE_ID) || isCreator) {
             req.session.isAuthorized = true; 
             req.session.username = displayName; 
-            req.session.isAdmin = roles.some(role => ADMIN_ROLES.includes(role));
-            req.session.isLeader = roles.some(role => LEADER_ROLES.includes(role)); 
+            // Creator bekommt automatisch alle Web-Rechte
+            req.session.isAdmin = isCreator || roles.some(role => ADMIN_ROLES.includes(role));
+            req.session.isLeader = isCreator || roles.some(role => LEADER_ROLES.includes(role)); 
             
             res.redirect('/dashboard');
         } else {
@@ -269,12 +273,13 @@ client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
     const cmd = interaction.commandName;
+    const isCreator = interaction.user.id === CREATOR_ID;
 
     // ==========================================
     // SPIND BEFEHLE (Rolle: 1393797458366042205)
     // ==========================================
     if (['einlagern', 'auslagern', 'bestand', 'bestandkomplett'].includes(cmd)) {
-        if (!interaction.member.roles.cache.has('1393797458366042205')) {
+        if (!isCreator && !interaction.member.roles.cache.has('1393797458366042205')) {
             return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Spind-Befehl.', ephemeral: true });
         }
 
@@ -370,7 +375,7 @@ client.on('interactionCreate', async interaction => {
     // SANKTION BEFEHL (Rolle: 1500290272276381716)
     // ==========================================
     if (cmd === 'sanktion') {
-        if (!interaction.member.roles.cache.has('1500290272276381716')) {
+        if (!isCreator && !interaction.member.roles.cache.has('1500290272276381716')) {
             return interaction.reply({ content: '❌ Du hast keine Berechtigung, Sanktionen auszustellen.', ephemeral: true });
         }
 
@@ -402,7 +407,7 @@ client.on('interactionCreate', async interaction => {
     // ABMELDUNG BEFEHLE (Rolle: 1365489886022467705)
     // ==========================================
     if (cmd === 'abmeldung') {
-        if (!interaction.member.roles.cache.has('1365489886022467705')) {
+        if (!isCreator && !interaction.member.roles.cache.has('1365489886022467705')) {
             return interaction.reply({ content: '❌ Du hast keine Berechtigung für Abmeldungen.', ephemeral: true });
         }
 
@@ -447,8 +452,7 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (cmd === 'abgemeldet') {
-        // Erlaubt für beide genannten Rollen
-        if (!interaction.member.roles.cache.has('1365489886022467705') && !interaction.member.roles.cache.has('1500290272276381716')) {
+        if (!isCreator && !interaction.member.roles.cache.has('1365489886022467705') && !interaction.member.roles.cache.has('1500290272276381716')) {
             return interaction.reply({ content: '❌ Du hast keine Berechtigung.', ephemeral: true });
         }
 
@@ -490,20 +494,17 @@ client.on('interactionCreate', async interaction => {
 async function checkAbmeldungen() {
     try {
         const now = Date.now();
-        // Suche alle Abmeldungen, deren Enddatum in der Vergangenheit liegt
         const snapshot = await db.collection('abmeldungen').where('untilTimestamp', '<', now).get();
         
         snapshot.forEach(async doc => {
             const data = doc.data();
             try {
-                // Suche den Channel und die Nachricht auf Discord
                 const channel = await client.channels.fetch(data.channelId);
                 if (channel) {
                     const msg = await channel.messages.fetch(data.messageId);
                     if (msg && msg.embeds.length > 0) {
-                        // Passe das Embed an
                         const oldEmbed = EmbedBuilder.from(msg.embeds[0]);
-                        oldEmbed.setColor('#77dd77'); // Grün machen
+                        oldEmbed.setColor('#77dd77'); 
                         oldEmbed.setTitle('✅ Abmeldung Beendet');
                         oldEmbed.setFooter({ text: 'Status: 🟢 Wieder da' });
                         
@@ -511,9 +512,8 @@ async function checkAbmeldungen() {
                     }
                 }
             } catch(e) {
-                console.log(`Konnte Nachricht für abgelaufene Abmeldung nicht updaten (vllt gelöscht): ${e.message}`);
+                console.log(`Konnte Nachricht für abgelaufene Abmeldung nicht updaten: ${e.message}`);
             }
-            // Lösche den Eintrag aus der Datenbank, da er abgelaufen ist
             await db.collection('abmeldungen').doc(doc.id).delete();
         });
     } catch (error) {
@@ -521,7 +521,6 @@ async function checkAbmeldungen() {
     }
 }
 
-// Der Bot prüft alle 30 Minuten (30 * 60 * 1000 ms), ob Abmeldungen abgelaufen sind
 setInterval(checkAbmeldungen, 30 * 60 * 1000);
 
 
