@@ -277,7 +277,7 @@ client.on('interactionCreate', async interaction => {
     const cmd = interaction.commandName;
     const isCreator = interaction.user.id === CREATOR_ID;
 
-// ==========================================
+    // ==========================================
     // SPIND BEFEHLE (Rolle: 1393797458366042205)
     // ==========================================
     if (['einlagern', 'auslagern', 'bestand', 'bestandkomplett'].includes(cmd)) {
@@ -285,7 +285,7 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Spind-Befehl.', ephemeral: true });
         }
 
-        // GIBT DEM BOT ZEIT: Erzeugt "Der Bot denkt nach..." und verhindert den 3-Sekunden Timeout Crash!
+        // VERHINDERT DEN ABSTURZ (Gibt dem Bot bis zu 15 Minuten Zeit zum Rechnen)
         await interaction.deferReply();
 
         if (cmd === 'einlagern' || cmd === 'auslagern') {
@@ -377,55 +377,6 @@ client.on('interactionCreate', async interaction => {
                 await interaction.editReply({ content: '❌ Datenbank Fehler.' });
             }
         }
-    } 
-        
-        else if (cmd === 'bestand') {
-            const targetMember = interaction.options.getMember('mitglied');
-            if (!targetMember) return interaction.reply({ content: '❌ Mitglied nicht gefunden.', ephemeral: true });
-
-            const targetName = targetMember.displayName;
-            try {
-                const doc = await db.collection("lockers").doc(targetName).get();
-                if (!doc.exists) return interaction.reply({ content: `🗄️ Der Spind von **${targetName}** ist leer.` });
-
-                const items = doc.data().items || {};
-                let bestandText = `🗄️ **Spind-Bestand von ${targetName}:**\n\n`;
-                let hasItems = false;
-
-                for (const [itemName, amount] of Object.entries(items)) {
-                    if (amount > 0) { bestandText += `📦 **${amount}x** ${itemName}\n`; hasItems = true; }
-                }
-                if (!hasItems) bestandText = `🗄️ Der Spind von **${targetName}** ist komplett leer.`;
-                interaction.reply({ content: bestandText });
-            } catch (error) {
-                interaction.reply({ content: '❌ Datenbank Fehler.', ephemeral: true });
-            }
-        }
-
-        else if (cmd === 'bestandkomplett') {
-            try {
-                const snapshot = await db.collection("lockers").get();
-                if (snapshot.empty) return interaction.reply({ content: '🗄️ Keine Gegenstände registriert.' });
-
-                let totals = {};
-                snapshot.forEach(doc => {
-                    const items = doc.data().items || {};
-                    for (const [itemName, amount] of Object.entries(items)) {
-                        if (amount > 0) totals[itemName] = (totals[itemName] || 0) + amount;
-                    }
-                });
-
-                let replyText = `📊 **Gesamter Fraktions-Bestand (Zusammengerechnet):**\n\n`;
-                let hasItems = false;
-                for (const [itemName, amount] of Object.entries(totals)) {
-                    if (amount > 0) { replyText += `📦 **${amount}x** ${itemName}\n`; hasItems = true; }
-                }
-                if (!hasItems) replyText = `🗄️ Alle Spinde leer.`;
-                interaction.reply({ content: replyText });
-            } catch (error) {
-                interaction.reply({ content: '❌ Datenbank Fehler.', ephemeral: true });
-            }
-        }
     }
 
     // ==========================================
@@ -444,7 +395,6 @@ client.on('interactionCreate', async interaction => {
         if (!targetMember) return interaction.reply({ content: '❌ Mitglied nicht gefunden.', ephemeral: true });
 
         const sanktionEmbed = new EmbedBuilder()
-            // DESIGN-UPDATE: Mittleres Grau statt Rot
             .setColor('#808080')
             .setTitle('⚖️ Fraktions-Sanktion')
             .setThumbnail(targetMember.user.displayAvatarURL({ dynamic: true }))
@@ -484,7 +434,6 @@ client.on('interactionCreate', async interaction => {
         const untilTimestamp = parsedDate.getTime();
 
         const abmeldungEmbed = new EmbedBuilder()
-            // DESIGN-UPDATE: Reines Weiß statt Gelb
             .setColor('#FFFFFF')
             .setTitle('🏖️ Neue Abmeldung')
             .addFields(
@@ -520,7 +469,6 @@ client.on('interactionCreate', async interaction => {
             }
 
             const listEmbed = new EmbedBuilder()
-                // DESIGN-UPDATE: Hellgrau statt Blau
                 .setColor('#C0C0C0')
                 .setTitle('📋 Aktuelle Abmeldungen');
 
@@ -543,7 +491,7 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-// ==========================================
+    // ==========================================
     // VERWALTUNG BEFEHL (Rolle: 1393797458366042205)
     // ==========================================
     if (cmd === 'verwaltung') {
@@ -572,7 +520,6 @@ client.on('interactionCreate', async interaction => {
             ];
 
             const embed = new EmbedBuilder()
-                // HIER IST DIE FARBE: Ein sauberes Silber-Grau statt Grün!
                 .setColor('#C0C0C0')
                 .setTitle('📋 Team-Übersicht: Verwaltung')
                 .setDescription('Hier ist die aktuelle Auflistung der Verwaltungs-Mitglieder:')
@@ -602,7 +549,7 @@ client.on('interactionCreate', async interaction => {
             await interaction.editReply({ content: '❌ Es gab einen Fehler beim Senden der Nachricht.' });
         }
     }
-}); 
+}); // <-- Diese Klammer war vorher der Übeltäter und ist jetzt wieder da!
 
 // ==========================================
 // AUTO-CHECK FÜR ABGELAUFENE ABMELDUNGEN
@@ -620,7 +567,6 @@ async function checkAbmeldungen() {
                     const msg = await channel.messages.fetch(data.messageId);
                     if (msg && msg.embeds.length > 0) {
                         const oldEmbed = EmbedBuilder.from(msg.embeds[0]);
-                        // DESIGN-UPDATE: Sehr dunkles Grau statt Hellgrün
                         oldEmbed.setColor('#2F3136'); 
                         oldEmbed.setTitle('✅ Abmeldung Beendet');
                         oldEmbed.setFooter({ text: 'Status: 🟢 Wieder da' });
@@ -657,13 +603,19 @@ client.on('guildMemberAdd', async member => {
     statsText += `> 📥 Gejoint: ${joinedUnix ? `<t:${joinedUnix}:F> (<t:${joinedUnix}:R>)` : 'Unbekannt'}\n`;
     statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
 
-    const welcomeEmbed = new EmbedBuilder()
-        // DESIGN-UPDATE: Reines Weiß statt Orange
+    // 1. Embed: Nur für das Banner ganz oben
+    const bannerEmbed = new EmbedBuilder()
+        .setColor('#FFFFFF') 
+        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&')
+        .setURL('https://vindicta.com');
+
+    // 2. Embed: Für den Text direkt darunter
+    const textEmbed = new EmbedBuilder()
         .setColor('#FFFFFF') 
         .setDescription(`👋 **Willkommen** <@${member.id}>` + statsText)
-        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&');
+        .setURL('https://vindicta.com');
 
-    channel.send({ embeds: [welcomeEmbed] }).catch(console.error);
+    channel.send({ embeds: [bannerEmbed, textEmbed] }).catch(console.error);
 });
 
 client.on('guildMemberRemove', async member => {
@@ -680,13 +632,19 @@ client.on('guildMemberRemove', async member => {
     statsText += `> 📤 Verlassen: <t:${leftUnix}:F> (<t:${leftUnix}:R>)\n`;
     statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
 
-    const leaveEmbed = new EmbedBuilder()
-        // Bereits Dunkelgrau, passt perfekt
+    // 1. Embed: Nur für das Banner ganz oben
+    const bannerEmbed = new EmbedBuilder()
+        .setColor('#444444') 
+        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&')
+        .setURL('https://vindicta.com');
+
+    // 2. Embed: Für den Text direkt darunter
+    const textEmbed = new EmbedBuilder()
         .setColor('#444444') 
         .setDescription(`👋 **Auf Wiedersehen** **${userName}**` + statsText)
-        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&');
+        .setURL('https://vindicta.com');
 
-    channel.send({ embeds: [leaveEmbed] }).catch(console.error);
+    channel.send({ embeds: [bannerEmbed, textEmbed] }).catch(console.error);
 });
 
 client.login(process.env.BOT_TOKEN);
