@@ -488,7 +488,7 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // ==========================================
+// ==========================================
     // VERWALTUNG BEFEHL (Rolle: 1393797458366042205)
     // ==========================================
     if (cmd === 'verwaltung') {
@@ -517,8 +517,8 @@ client.on('interactionCreate', async interaction => {
             ];
 
             const embed = new EmbedBuilder()
-                // DESIGN-UPDATE: Reines Weiß statt Grün
-                .setColor('#FFFFFF')
+                // HIER IST DIE FARBE: Ein sauberes Silber-Grau statt Grün!
+                .setColor('#C0C0C0')
                 .setTitle('📋 Team-Übersicht: Verwaltung')
                 .setDescription('Hier ist die aktuelle Auflistung der Verwaltungs-Mitglieder:')
                 .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1504525109988167751/050213-ezgif.com-video-to-gif-converter.gif?ex=6a0beaf2&is=6a0a9972&hm=d182cc1330c0d6630d707c20b80decefe3a9fb50c6fd5810526973f356f7c96f&');
