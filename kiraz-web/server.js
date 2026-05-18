@@ -27,7 +27,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // --- EINSTELLUNGEN ---
-const CREATOR_ID = '444942593864761369'; // DEINE ID (Hat immer alle Rechte!)
+const CREATOR_ID = '444942593864761369'; // DEINE ID
 const REQUIRED_GUILD_ID = '1346576630751035533';
 const REQUIRED_ROLE_ID = '1365489886022467705';
 
@@ -102,11 +102,9 @@ app.get('/callback', async (req, res) => {
         
         const isCreator = userId === CREATOR_ID;
 
-        // Der Creator kommt immer rein, andere brauchen die Fraktionsrolle
         if (roles.includes(REQUIRED_ROLE_ID) || isCreator) {
             req.session.isAuthorized = true; 
             req.session.username = displayName; 
-            // Creator bekommt automatisch alle Web-Rechte
             req.session.isAdmin = isCreator || roles.some(role => ADMIN_ROLES.includes(role));
             req.session.isLeader = isCreator || roles.some(role => LEADER_ROLES.includes(role)); 
             
@@ -251,6 +249,10 @@ const commands = [
     {
         name: 'abgemeldet',
         description: 'Zeigt eine Liste aller aktuell Abgemeldeten'
+    },
+    {
+        name: 'verwaltung',
+        description: 'Sendet eine Team-Übersicht in den Verwaltungs-Channel (Admin)'
     }
 ];
 
@@ -415,7 +417,6 @@ client.on('interactionCreate', async interaction => {
         const grund = interaction.options.getString('grund');
         const bisWann = interaction.options.getString('bis_wann');
 
-        // Datum auslesen (Erwartet DD.MM.YYYY)
         const dateRegex = /^(\d{2})\.(\d{2})\.(\d{4})$/;
         const match = bisWann.match(dateRegex);
         
@@ -423,7 +424,6 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ **Fehler:** Bitte das Datum exakt im Format `TT.MM.JJJJ` eingeben (z.B. `24.12.2026`). Sonst funktioniert die Automatik nicht!', ephemeral: true });
         }
 
-        // Setzt das Ablaufdatum auf 23:59:59 Uhr des angegebenen Tages
         const parsedDate = new Date(`${match[3]}-${match[2]}-${match[1]}T23:59:59`);
         const untilTimestamp = parsedDate.getTime();
 
@@ -437,7 +437,6 @@ client.on('interactionCreate', async interaction => {
             )
             .setFooter({ text: 'Status: 🟡 Aktiv' });
 
-        // Nachricht senden und danach in Firebase speichern (für den Auto-Check)
         const reply = await interaction.reply({ embeds: [abmeldungEmbed], fetchReply: true });
 
         await db.collection('abmeldungen').add({
@@ -485,7 +484,67 @@ client.on('interactionCreate', async interaction => {
             interaction.reply({ content: '❌ Datenbank Fehler.', ephemeral: true });
         }
     }
-});
+
+   // ==========================================
+    // VERWALTUNG BEFEHL (Rolle: 1393797458366042205)
+    // ==========================================
+    if (cmd === 'verwaltung') {
+        if (!isCreator && !interaction.member.roles.cache.has('1393797458366042205')) {
+            return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Befehl.', ephemeral: true });
+        }
+
+        const targetChannelId = '1385576279138500618';
+        const targetChannel = interaction.guild.channels.cache.get(targetChannelId);
+
+        if (!targetChannel) {
+            return interaction.reply({ content: `❌ Konnte den Ziel-Channel (<#${targetChannelId}>) nicht finden.`, ephemeral: true });
+        }
+
+        await interaction.deferReply({ ephemeral: true }); // Gibt uns Zeit zum Laden
+
+        try {
+            // Lädt alle Member in den Cache, damit auch Offline-User gefunden werden
+            await interaction.guild.members.fetch();
+
+            const rolesToList = [
+                '1505001694155640945',
+                '1394457300693024838',
+                '1500290272276381716',
+                '1500290554947309730',
+                '1499020589057314837'
+            ];
+
+            const embed = new EmbedBuilder()
+                .setColor('#2ecc71')
+                .setTitle('📋 Team-Übersicht: Verwaltung')
+                .setDescription('Hier ist die aktuelle Auflistung der Verwaltungs-Mitglieder:')
+                // NEU: Hier wird das GIF unten an das Embed angehängt
+                .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1504525109988167751/050213-ezgif.com-video-to-gif-converter.gif?ex=6a0beaf2&is=6a0a9972&hm=d182cc1330c0d6630d707c20b80decefe3a9fb50c6fd5810526973f356f7c96f&');
+
+            for (const roleId of rolesToList) {
+                const role = interaction.guild.roles.cache.get(roleId);
+                if (role) {
+                    const membersWithRole = role.members;
+                    let memberList = membersWithRole.size > 0 
+                        ? membersWithRole.map(m => `> <@${m.id}>`).join('\n') 
+                        : '> *Niemand hat diese Rolle*';
+                    
+                    embed.addFields({
+                        name: '\u200B', // Unsichtbares Zeichen für einen sauberen Look
+                        value: `<@&${roleId}>\n${memberList}`,
+                        inline: false
+                    });
+                }
+            }
+
+            await targetChannel.send({ embeds: [embed] });
+            await interaction.editReply({ content: `✅ Die Verwaltungs-Übersicht wurde erfolgreich in <#${targetChannelId}> gesendet.` });
+
+        } catch (error) {
+            console.error("Fehler beim Erstellen der Verwaltungs-Übersicht:", error);
+            await interaction.editReply({ content: '❌ Es gab einen Fehler beim Senden der Nachricht.' });
+        }
+    }
 
 
 // ==========================================
