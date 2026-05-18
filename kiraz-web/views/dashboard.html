@@ -153,10 +153,32 @@
 </div>
 
 <div id="schwarzmarktTab" style="display:none;">
-    <div class="box box-large">
-        <h2 style="color:#ffffff">🛒 Schwarzmarkt</h2>
-        <p style="color:#ccc;">Kaufe illegale Gegenstände direkt über das Fraktionskonto.</p>
-        <div class="shop-grid" id="shopGrid"></div>
+    <div class="box box-large" style="display: flex; gap: 20px; flex-wrap: wrap;">
+        
+        <div style="flex: 2; min-width: 300px;">
+            <h2 style="color:#ffffff">🛒 Schwarzmarkt</h2>
+            <p style="color:#ccc;">Kaufe illegale Gegenstände direkt über das Fraktionskonto.</p>
+            <div class="shop-grid" id="shopGrid"></div>
+        </div>
+
+        <div style="flex: 1; min-width: 280px; background: rgba(0,0,0,0.6); padding: 20px; border-radius: 15px; border: 1px solid #3e3e5e; align-self: flex-start; margin-top: 60px;">
+            <h3 style="color: #ffcc00; margin-top: 0; text-align: left;">🛍️ Warenkorb</h3>
+            
+            <div id="cartItems" style="text-align: left; margin-bottom: 15px; min-height: 120px; max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                <p style="color:#aaa;">Der Warenkorb ist leer.</p>
+            </div>
+            
+            <hr style="border: 0.5px solid #3e3e5e; margin: 15px 0;">
+            
+            <div style="display: flex; justify-content: space-between; font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">
+                <span>Gesamt:</span>
+                <span id="cartTotal" style="color: #77dd77;">0 €</span>
+            </div>
+            
+            <button class="btn-action" onclick="checkoutCart()" style="background: #ffcc00; color: #000; margin-top: 10px;">💰 Jetzt Kaufen</button>
+            <button class="btn-action" onclick="clearCart()" style="background: #444; color: #fff; margin-top: 10px;">🗑️ Leeren</button>
+        </div>
+
     </div>
 </div>
 
