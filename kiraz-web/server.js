@@ -485,7 +485,7 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-   // ==========================================
+    // ==========================================
     // VERWALTUNG BEFEHL (Rolle: 1393797458366042205)
     // ==========================================
     if (cmd === 'verwaltung') {
@@ -500,10 +500,9 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: `❌ Konnte den Ziel-Channel (<#${targetChannelId}>) nicht finden.`, ephemeral: true });
         }
 
-        await interaction.deferReply({ ephemeral: true }); // Gibt uns Zeit zum Laden
+        await interaction.deferReply({ ephemeral: true }); 
 
         try {
-            // Lädt alle Member in den Cache, damit auch Offline-User gefunden werden
             await interaction.guild.members.fetch();
 
             const rolesToList = [
@@ -518,7 +517,6 @@ client.on('interactionCreate', async interaction => {
                 .setColor('#2ecc71')
                 .setTitle('📋 Team-Übersicht: Verwaltung')
                 .setDescription('Hier ist die aktuelle Auflistung der Verwaltungs-Mitglieder:')
-                // NEU: Hier wird das GIF unten an das Embed angehängt
                 .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1504525109988167751/050213-ezgif.com-video-to-gif-converter.gif?ex=6a0beaf2&is=6a0a9972&hm=d182cc1330c0d6630d707c20b80decefe3a9fb50c6fd5810526973f356f7c96f&');
 
             for (const roleId of rolesToList) {
@@ -530,7 +528,7 @@ client.on('interactionCreate', async interaction => {
                         : '> *Niemand hat diese Rolle*';
                     
                     embed.addFields({
-                        name: '\u200B', // Unsichtbares Zeichen für einen sauberen Look
+                        name: '\u200B', 
                         value: `<@&${roleId}>\n${memberList}`,
                         inline: false
                     });
@@ -545,7 +543,7 @@ client.on('interactionCreate', async interaction => {
             await interaction.editReply({ content: '❌ Es gab einen Fehler beim Senden der Nachricht.' });
         }
     }
-
+}); 
 
 // ==========================================
 // AUTO-CHECK FÜR ABGELAUFENE ABMELDUNGEN
@@ -582,7 +580,6 @@ async function checkAbmeldungen() {
 
 setInterval(checkAbmeldungen, 30 * 60 * 1000);
 
-
 // ==========================================
 // WILLKOMMEN & VERLASSEN EVENTS
 // ==========================================
@@ -592,19 +589,20 @@ client.on('guildMemberAdd', async member => {
     const channel = member.guild.channels.cache.get(welcomeChannelId);
     if (!channel) return;
 
-    // 1. Embed: Nur für das Banner ganz oben
-    const bannerEmbed = new EmbedBuilder()
-        .setColor('#ff9900') 
-        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&')
-        .setURL('https://vindicta.com');
+    // Discord Timestamps berechnen
+    const joinedUnix = member.joinedTimestamp ? Math.floor(member.joinedTimestamp / 1000) : null;
+    const createdUnix = member.user.createdTimestamp ? Math.floor(member.user.createdTimestamp / 1000) : null;
 
-    // 2. Embed: Für den Text direkt darunter
-    const textEmbed = new EmbedBuilder()
-        .setColor('#ff9900') 
-        .setDescription(`👋 **Willkommen** <@${member.id}>`)
-        .setURL('https://vindicta.com');
+    let statsText = "\n\n**User-Stats:**\n";
+    statsText += `> 📥 Gejoint: ${joinedUnix ? `<t:${joinedUnix}:F> (<t:${joinedUnix}:R>)` : 'Unbekannt'}\n`;
+    statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
 
-    channel.send({ embeds: [bannerEmbed, textEmbed] }).catch(console.error);
+    const welcomeEmbed = new EmbedBuilder()
+        .setColor('#ff9900') 
+        .setDescription(`👋 **Willkommen** <@${member.id}>` + statsText)
+        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&');
+
+    channel.send({ embeds: [welcomeEmbed] }).catch(console.error);
 });
 
 client.on('guildMemberRemove', async member => {
@@ -614,19 +612,19 @@ client.on('guildMemberRemove', async member => {
 
     const userName = member.nickname || member.user.globalName || member.user.username;
 
-    // 1. Embed: Nur für das Banner ganz oben
-    const bannerEmbed = new EmbedBuilder()
-        .setColor('#444444') 
-        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&')
-        .setURL('https://vindicta.com');
+    const leftUnix = Math.floor(Date.now() / 1000);
+    const createdUnix = member.user.createdTimestamp ? Math.floor(member.user.createdTimestamp / 1000) : null;
 
-    // 2. Embed: Für den Text direkt darunter
-    const textEmbed = new EmbedBuilder()
-        .setColor('#444444') 
-        .setDescription(`👋 **Auf Wiedersehen** **${userName}**`)
-        .setURL('https://vindicta.com');
+    let statsText = "\n\n**User-Stats:**\n";
+    statsText += `> 📤 Verlassen: <t:${leftUnix}:F> (<t:${leftUnix}:R>)\n`;
+    statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
 
-    channel.send({ embeds: [bannerEmbed, textEmbed] }).catch(console.error);
+    const leaveEmbed = new EmbedBuilder()
+        .setColor('#444444') 
+        .setDescription(`👋 **Auf Wiedersehen** **${userName}**` + statsText)
+        .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&');
+
+    channel.send({ embeds: [leaveEmbed] }).catch(console.error);
 });
 
 client.login(process.env.BOT_TOKEN);
