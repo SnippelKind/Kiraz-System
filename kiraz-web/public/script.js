@@ -939,6 +939,8 @@ const shopItems = [
     { name: "Folterstuhl", cat: "Schwarzmarkt", price: "165.000 €", icon: "🪑" }
 ];
 
+let shoppingCart = {};
+
 function renderShop() {
     const grid = document.getElementById("shopGrid");
     if (!grid) return;
@@ -957,15 +959,103 @@ function renderShop() {
                     <div class="shop-name">${item.name}</div>
                     <div class="shop-cat">${item.cat}</div>
                 </div>
-                <div class="shop-buy" onclick="alert('${item.name} gekauft! (Funktion folgt)')" title="Kaufen">
-                    🛒
+                <div class="shop-buy" onclick="addToCart('${item.name}', '${item.price}')" title="In den Warenkorb legen">
+                    ➕
                 </div>
             </div>
         </div>`;
     });
 }
-renderShop();
 
+function addToCart(itemName, priceStr) {
+    // Wandelt "12.375 €" in die Zahl 12375 um, damit wir damit rechnen können
+    let numericPrice = parseInt(priceStr.replace(/\D/g, ''));
+    
+    if (shoppingCart[itemName]) {
+        shoppingCart[itemName].amount += 1;
+    } else {
+        shoppingCart[itemName] = { amount: 1, price: numericPrice };
+    }
+    renderCart();
+}
+
+function renderCart() {
+    const cartItemsDiv = document.getElementById("cartItems");
+    const cartTotalSpan = document.getElementById("cartTotal");
+    
+    if (!cartItemsDiv || !cartTotalSpan) return;
+
+    cartItemsDiv.innerHTML = "";
+    let total = 0;
+    let empty = true;
+
+    for (let itemName in shoppingCart) {
+        let item = shoppingCart[itemName];
+        if (item.amount > 0) {
+            empty = false;
+            let itemTotal = item.amount * item.price;
+            total += itemTotal;
+            
+            cartItemsDiv.innerHTML += `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.95em; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+                <span><b style="color:#fff;">${item.amount}x</b> <span style="color:#ccc;">${itemName}</span></span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color:#aaa;">${itemTotal.toLocaleString('de-DE')} €</span>
+                    <button onclick="removeFromCart('${itemName}')" style="background: none; border: none; color: #ff6b6b; cursor: pointer; font-size: 1.2em; padding: 0;">✖</button>
+                </div>
+            </div>`;
+        }
+    }
+
+    if (empty) {
+        cartItemsDiv.innerHTML = '<p style="color:#aaa;">Der Warenkorb ist leer.</p>';
+    }
+
+    cartTotalSpan.innerText = total.toLocaleString('de-DE') + " €";
+}
+
+function removeFromCart(itemName) {
+    if (shoppingCart[itemName]) {
+        shoppingCart[itemName].amount -= 1;
+        if (shoppingCart[itemName].amount <= 0) {
+            delete shoppingCart[itemName];
+        }
+    }
+    renderCart();
+}
+
+function clearCart() {
+    shoppingCart = {};
+    renderCart();
+}
+
+function checkoutCart() {
+    let totalItems = 0;
+    let totalPrice = 0;
+    let summary = [];
+
+    for (let itemName in shoppingCart) {
+        if (shoppingCart[itemName].amount > 0) {
+            totalItems += shoppingCart[itemName].amount;
+            totalPrice += (shoppingCart[itemName].amount * shoppingCart[itemName].price);
+            summary.push(`${shoppingCart[itemName].amount}x ${itemName}`);
+        }
+    }
+
+    if (totalItems === 0) {
+        alert("Der Warenkorb ist leer!");
+        return;
+    }
+
+    if (confirm(`Bist du sicher?\n\nKaufpreis: ${totalPrice.toLocaleString('de-DE')} €\n\nInhalt:\n- ${summary.join("\n- ")}`)) {
+        
+        // Log in die Datenbank eintragen
+        addLog("Schwarzmarkt Einkauf", `Hat für ${totalPrice.toLocaleString('de-DE')} € folgendes bestellt: ${summary.join(", ")}`);
+        
+        clearCart();
+        alert("Bestellung erfolgreich aufgegeben! Der Einkauf wurde im Protokoll vermerkt.");
+    }
+}
 let currentSelectedMarkerIndex = null;
 
 db.collection("markers").onSnapshot((querySnapshot) => {
