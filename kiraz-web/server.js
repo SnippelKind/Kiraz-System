@@ -108,7 +108,7 @@ app.get('/callback', async (req, res) => {
             req.session.isAdmin = isCreator || roles.some(role => ADMIN_ROLES.includes(role));
             req.session.isLeader = isCreator || roles.some(role => LEADER_ROLES.includes(role)); 
             
-            // NEU: Berechtigung für das Sonder-Lager speichern (Rolle 1393797458366042205 oder Creator)
+            // Berechtigung für das Sonder-Lager speichern (Rolle 1393797458366042205 oder Creator)
             req.session.isStorageAdmin = isCreator || roles.includes('1393797458366042205');
             
             res.redirect('/dashboard');
@@ -126,7 +126,6 @@ app.get('/api/user', (req, res) => {
             username: req.session.username,
             isAdmin: req.session.isAdmin || false,
             isLeader: req.session.isLeader || false,
-            // NEU: Dem Frontend mitteilen, ob der User das Sonder-Lager sehen darf
             isStorageAdmin: req.session.isStorageAdmin || false 
         });
     } else {
@@ -233,6 +232,46 @@ const commands = [
         description: 'Zeigt den gesamten Bestand aller Spinde zusammengerechnet (Admin)'
     },
     {
+        name: 'sonderlager',
+        description: 'Verwaltet die Sonder-Lager (10ner & Main) - Nur Leitung',
+        options: [
+            {
+                name: 'aktion',
+                type: 3, 
+                description: 'Was möchtest du tun?',
+                required: true,
+                choices: [
+                    { name: 'Einlagern', value: 'einlagern' },
+                    { name: 'Auslagern', value: 'auslagern' },
+                    { name: 'Bestand anzeigen', value: 'bestand' }
+                ]
+            },
+            {
+                name: 'lager',
+                type: 3, 
+                description: 'Welches Lager?',
+                required: true,
+                choices: [
+                    { name: '10ner Lager', value: '10ner_Lager' },
+                    { name: 'Mainlager', value: 'Mainlager' }
+                ]
+            },
+            {
+                name: 'item',
+                type: 3, 
+                description: 'Welches Item? (Pflicht bei Ein-/Auslagern)',
+                required: false,
+                choices: spindItems
+            },
+            {
+                name: 'anzahl',
+                type: 4, 
+                description: 'Wie viele? (Pflicht bei Ein-/Auslagern)',
+                required: false
+            }
+        ]
+    },
+    {
         name: 'sanktion',
         description: 'Stellt eine Sanktion aus (Nur berechtigte Leitung)',
         options: [
@@ -316,11 +355,12 @@ client.on('interactionCreate', async interaction => {
     // ==========================================
     if (cmd === 'befehle') {
         const befehleEmbed = new EmbedBuilder()
-            .setColor('#2C2F33') // Ein dunkles Grau/Schwarz für das Design
+            .setColor('#2C2F33') 
             .setTitle('⚙️ Bot Befehlsübersicht')
             .setDescription('Hier ist eine Übersicht aller verfügbaren Befehle und ihrer Funktionen:')
             .addFields(
                 { name: '🗄️ Spind-System (Admin)', value: '`/einlagern` - Legt Items in einen Spieler-Spind\n`/auslagern` - Nimmt Items aus einem Spind heraus\n`/bestand` - Zeigt den Inhalt eines bestimmten Spinds\n`/bestandkomplett` - Rechnet den Inhalt aller Spinde zusammen', inline: false },
+                { name: '🏛️ Sonder-Lager', value: '`/sonderlager` - Items in 10ner Lager / Mainlager einlagern, auslagern oder ansehen', inline: false },
                 { name: '👷 Arbeiter-System', value: '`/arbeiter` - Trägt einen neuen Arbeiter inkl. Ausweisbild ein\n`/arbeiter_entfernen` - Löscht einen Arbeiter aus der Datenbank\n`/arbeiterliste` - Zeigt alle eingetragenen Arbeiter', inline: false },
                 { name: '🏖️ Abmeldungen', value: '`/abmeldung` - Meldet ein Mitglied mit Datum und Grund ab\n`/abgemeldet` - Zeigt eine Übersicht aller aktiven Abmeldungen', inline: false },
                 { name: '⚖️ Verwaltung & Sanktionen', value: '`/sanktion` - Stellt eine offizielle Sanktion mit Zahlungsfrist aus\n`/verwaltung` - Postet die Team-Verwaltungsübersicht', inline: false },
@@ -406,6 +446,78 @@ client.on('interactionCreate', async interaction => {
     }
 
     // ==========================================
+    // SONDER-LAGER BEFEHL (Rolle: 1393797458366042205)
+    // ==========================================
+    if (cmd === 'sonderlager') {
+        if (!isCreator && !interaction.member.roles.cache.has('1393797458366042205')) {
+            return interaction.reply({ content: '❌ Du hast keine Berechtigung für das Sonder-Lager.', ephemeral: true });
+        }
+
+        await interaction.deferReply();
+
+        const aktion = interaction.options.getString('aktion');
+        const lager = interaction.options.getString('lager');
+        const item = interaction.options.getString('item');
+        const anzahl = interaction.options.getInteger('anzahl');
+        const executorName = interaction.member.displayName;
+        
+        const displayName = lager === '10ner_Lager' ? '10ner Lager' : 'Mainlager';
+        const docRef = db.collection("lockers").doc(lager);
+
+        if (aktion === 'bestand') {
+            try {
+                const doc = await docRef.get();
+                if (!doc.exists) return interaction.editReply({ content: `🏛️ Das **${displayName}** ist aktuell leer.` });
+
+                const items = doc.data().items || {};
+                let bestandText = `🏛️ **Bestand im ${displayName}:**\n\n`;
+                let hasItems = false;
+
+                for (const [itemName, amount] of Object.entries(items)) {
+                    if (amount > 0) { bestandText += `📦 **${amount}x** ${itemName}\n`; hasItems = true; }
+                }
+                if (!hasItems) bestandText = `🏛️ Das **${displayName}** ist komplett leer.`;
+                
+                return interaction.editReply({ content: bestandText });
+            } catch (error) {
+                return interaction.editReply({ content: '❌ Datenbank Fehler beim Abrufen des Sonder-Lagers.' });
+            }
+        } else {
+            // Einlagern oder Auslagern
+            if (!item || !anzahl || anzahl <= 0) {
+                return interaction.editReply({ content: '❌ Fehler: Bitte gib ein Item und eine Anzahl größer als 0 an, um einzulagern oder auszulagern.' });
+            }
+
+            try {
+                const newAmount = await db.runTransaction(async (t) => {
+                    const doc = await t.get(docRef);
+                    let items = doc.exists ? doc.data().items || {} : {};
+                    let currentAmount = items[item] || 0;
+                    let updatedAmount = aktion === 'einlagern' ? currentAmount + anzahl : Math.max(0, currentAmount - anzahl);
+                    items[item] = updatedAmount;
+                    t.set(docRef, { items: items }, { merge: true });
+                    return updatedAmount; 
+                });
+
+                let actText = aktion === 'einlagern' ? 'eingelagert' : 'entnommen';
+                await db.collection("logs").add({
+                    user: executorName, action: `Discord Bot (Sonder-Lager)`,
+                    details: `${anzahl}x ${item} im ${displayName} ${actText}.`,
+                    timestamp: admin.firestore.FieldValue.serverTimestamp()
+                });
+
+                const emoji = aktion === 'einlagern' ? '📥' : '📤';
+                let replyText = `${emoji} Erfolgreich **${anzahl}x ${item}** im **${displayName}** ${actText}.\n📦 **Neuer Bestand:** ${newAmount}x`;
+                if (aktion === 'auslagern' && newAmount === 0) replyText += ` *(Hinweis: Evtl. nicht genug Items vorhanden).*`;
+                
+                await interaction.editReply({ content: replyText });
+            } catch (error) {
+                await interaction.editReply({ content: '❌ Datenbank-Fehler beim Bearbeiten des Sonder-Lagers.' });
+            }
+        }
+    }
+
+    // ==========================================
     // SPIND BEFEHLE (Rolle: 1393797458366042205)
     // ==========================================
     if (['einlagern', 'auslagern', 'bestand', 'bestandkomplett'].includes(cmd)) {
@@ -486,13 +598,16 @@ client.on('interactionCreate', async interaction => {
 
                 let totals = {};
                 snapshot.forEach(doc => {
+                    // Verhindert, dass die Sonder-Lager zum Spieler-Bestand dazugerechnet werden!
+                    if (doc.id === '10ner_Lager' || doc.id === 'Mainlager') return;
+
                     const items = doc.data().items || {};
                     for (const [itemName, amount] of Object.entries(items)) {
                         if (amount > 0) totals[itemName] = (totals[itemName] || 0) + amount;
                     }
                 });
 
-                let replyText = `📊 **Gesamter Fraktions-Bestand (Zusammengerechnet):**\n\n`;
+                let replyText = `📊 **Gesamter Fraktions-Bestand aller Spieler-Spinde (Zusammengerechnet):**\n\n`;
                 let hasItems = false;
                 for (const [itemName, amount] of Object.entries(totals)) {
                     if (amount > 0) { replyText += `📦 **${amount}x** ${itemName}\n`; hasItems = true; }
@@ -726,14 +841,12 @@ client.on('interactionCreate', async interaction => {
         await interaction.deferReply();
 
         try {
-            // Suchen nach dem Arbeiter-Namen in der Datenbank
             const snapshot = await db.collection('arbeiter').where('arbeiterName', '==', arbeiterName).get();
             
             if (snapshot.empty) {
                 return interaction.editReply({ content: `❌ Konnte keinen Arbeiter mit dem Namen **${arbeiterName}** finden.` });
             }
 
-            // Arbeiter aus der Datenbank löschen
             const batch = db.batch();
             snapshot.docs.forEach(doc => {
                 batch.delete(doc.ref);
@@ -741,7 +854,7 @@ client.on('interactionCreate', async interaction => {
             await batch.commit();
 
             const embed = new EmbedBuilder()
-                .setColor('#E74C3C') // Rot
+                .setColor('#E74C3C') 
                 .setTitle('🛑 Arbeiter Ausgetragen')
                 .setDescription(`Der Arbeiter **${arbeiterName}** wurde erfolgreich entlassen / ausgetragen.`)
                 .setFooter({ text: `Ausgetragen von ${interaction.member.displayName}` })
