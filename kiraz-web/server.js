@@ -281,7 +281,7 @@ client.on('interactionCreate', async interaction => {
     const cmd = interaction.commandName;
     const isCreator = interaction.user.id === CREATOR_ID;
 
-  // ==========================================
+// ==========================================
     // FIVEM SERVER STATUS BEFEHL
     // ==========================================
     if (cmd === 'online') {
@@ -289,7 +289,7 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Befehl.', ephemeral: true });
         }
 
-        // HIER IST DIE ÄNDERUNG: ephemeral: true sorgt dafür, dass nur du die Liste siehst!
+        // Wir antworten kurz im Channel (nur für dich sichtbar), damit der Befehl nicht abstürzt
         await interaction.deferReply({ ephemeral: true }); 
 
         try {
@@ -309,18 +309,14 @@ client.on('interactionCreate', async interaction => {
             
             let playerListText = "";
             if (players.length > 0) {
-                // 1. Spieler in Vindicta und andere aufteilen
                 const vindictaPlayers = players.filter(p => p.name.toLowerCase().includes('vindicta'));
                 const otherPlayers = players.filter(p => !p.name.toLowerCase().includes('vindicta'));
 
-                // 2. Beide Listen alphabetisch sortieren
                 vindictaPlayers.sort((a, b) => a.name.localeCompare(b.name));
                 otherPlayers.sort((a, b) => a.name.localeCompare(b.name));
 
-                // 3. Listen zusammenfügen (Vindicta zuerst)
                 const sortedPlayers = [...vindictaPlayers, ...otherPlayers];
 
-                // 4. Liste formatieren (Vindicta Mitglieder werden hervorgehoben)
                 playerListText = sortedPlayers.map(p => {
                     if (p.name.toLowerCase().includes('vindicta')) {
                         return `• **${p.name}** 👑`; 
@@ -328,7 +324,6 @@ client.on('interactionCreate', async interaction => {
                     return `• ${p.name}`;
                 }).join('\n');
                 
-                // Falls der Text für Discord zu lang wird
                 if (playerListText.length > 3500) {
                     playerListText = playerListText.substring(0, 3500) + '\n\n*...und weitere Spieler*';
                 }
@@ -348,10 +343,20 @@ client.on('interactionCreate', async interaction => {
                 )
                 .setTimestamp();
 
-            await interaction.editReply({ embeds: [onlineEmbed] });
+            // NEU: Bot schickt dir eine echte Private Nachricht (DM) in dein Discord
+            await interaction.user.send({ embeds: [onlineEmbed] });
+            
+            // Kurze Bestätigung im Channel (die verschwindet)
+            await interaction.editReply({ content: '✅ Ich habe dir die Server-Liste per privater Nachricht (DM) gesendet!' });
 
         } catch (error) {
             console.error("Fehler bei der FiveM API Abfrage:", error);
+            
+            // Falls du DMs in deinen Discord-Einstellungen deaktiviert hast, sagt dir der Bot Bescheid
+            if (error.code === 50007) {
+                return interaction.editReply({ content: '❌ Ich kann dir keine Nachricht schicken. Bitte erlaube Direktnachrichten in deinen Server-Datenschutzeinstellungen!' });
+            }
+            
             await interaction.editReply({ content: '❌ Der Server ist aktuell nicht erreichbar oder die Abfrage wurde blockiert.' });
         }
     }
