@@ -18,8 +18,6 @@
 
 <button id="backBtn" class="btn-home" onclick="showDashboard()" style="display:none;">⬅ Home</button>
 
-<button id="backBtn" class="btn-home" onclick="showDashboard()" style="display:none;">⬅ Home</button>
-
 <div id="mainDashboard">
     <h1>Vindicta SYSTEM</h1>
     <div class="subtitle">Wähle eine Route aus</div>
@@ -81,9 +79,45 @@
         <button onclick="openRoute('timerTab')">⏱ Alle Timer</button>
         <button onclick="openRoute('smeltTab')">🔥 Schmelzofen</button>
         <button onclick="openRoute('spindTab'); openSpindTab();">🗄️ Fraktions-Spind</button>
+        <button id="specialStorageBtn" onclick="openRoute('specialStorageTab'); loadSpecialStorage();" style="display:none; background: #ffaa00; color: #121212;">🏛️ Sonder-Lager</button>
         <button id="logBtn" onclick="openRoute('logTab')" style="display:none;">📜 Protokoll</button>
         <button id="checklistBtn" onclick="openRoute('checklistTab')" style="display:none; background: #dddddd; color: #121212;">📋 Rang-Checkliste</button>
         <button id="onlineCountBtn" onclick="openRoute('onlineTab')">👥 Online (0)</button>
+    </div>
+</div>
+
+<div id="specialStorageTab" style="display:none;">
+    <div class="box box-large">
+        <h2 style="color:#ffaa00">🏛️ Sonder-Lager (10ner & Main)</h2>
+        <p style="color:#ccc;">Dieser Bereich ist nur für die berechtigte Leitungsebene sichtbar.</p>
+
+        <div style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
+            <label for="specialStorageSelect" style="color:#aaa; font-weight: bold; margin-bottom: 10px; display: block;">Lager auswählen:</label>
+            <select id="specialStorageSelect" onchange="loadSpecialStorage()">
+                <option value="10ner_Lager">10ner Lager</option>
+                <option value="Mainlager">Mainlager</option>
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+            <select id="specialStorageItemName" style="flex: 2; min-width: 200px;">
+                <option value="" disabled selected>-- Gegenstand wählen --</option>
+                <option value="SNS-Pistole">SNS-Pistole</option>
+                <option value="Normale Pistole">Normale Pistole</option>
+                <option value="MK2 Pistole">MK2 Pistole</option>
+                <option value="50. Pistole">50. Pistole</option>
+                <option value="Mikro SMG">Mikro SMG</option>
+                <option value="Abgesägte Schrottflinte">Abgesägte Schrottflinte</option>
+            </select>
+            
+            <input type="number" id="specialStorageItemAmount" placeholder="Anzahl..." style="flex: 1; min-width: 100px;">
+            <button class="btn-action" onclick="updateSpecialStorageItem('add')" style="flex: 1; background: #77dd77; color: black; margin: 0; min-width: 120px;">Einlagern ➕</button>
+            <button class="btn-action" onclick="updateSpecialStorageItem('remove')" style="flex: 1; background: #ff6b6b; color: white; margin: 0; min-width: 120px;">Auslagern ➖</button>
+        </div>
+
+        <div id="specialStorageList" style="text-align: left; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; border: 1px solid #3e3e5e; min-height: 150px;">
+            Lädt Lager...
+        </div>
     </div>
 </div>
 
@@ -100,7 +134,7 @@
 
         <h3 id="spindTitle" style="color: #77dd77; border-bottom: 1px solid #333; padding-bottom: 10px;">Mein Spind</h3>
 
-     <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
             <select id="spindItemName" style="flex: 2; min-width: 200px;">
                 <option value="" disabled selected>-- Gegenstand wählen --</option>
                 <option value="SNS-Pistole">SNS-Pistole</option>
