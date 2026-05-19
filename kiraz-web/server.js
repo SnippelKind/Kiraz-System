@@ -281,16 +281,16 @@ client.on('interactionCreate', async interaction => {
     const cmd = interaction.commandName;
     const isCreator = interaction.user.id === CREATOR_ID;
 
-    // ==========================================
+  // ==========================================
     // FIVEM SERVER STATUS BEFEHL
     // ==========================================
     if (cmd === 'online') {
-        // NEU: Berechtigungsprüfung hinzugefügt
         if (!isCreator && !interaction.member.roles.cache.has('1393797458366042205')) {
             return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Befehl.', ephemeral: true });
         }
 
-        await interaction.deferReply(); 
+        // HIER IST DIE ÄNDERUNG: ephemeral: true sorgt dafür, dass nur du die Liste siehst!
+        await interaction.deferReply({ ephemeral: true }); 
 
         try {
             const response = await axios.get('https://servers-frontend.fivem.net/api/servers/single/lvmkrv', {
@@ -309,10 +309,28 @@ client.on('interactionCreate', async interaction => {
             
             let playerListText = "";
             if (players.length > 0) {
-                playerListText = players.map(p => `• ${p.name}`).join('\n');
+                // 1. Spieler in Vindicta und andere aufteilen
+                const vindictaPlayers = players.filter(p => p.name.toLowerCase().includes('vindicta'));
+                const otherPlayers = players.filter(p => !p.name.toLowerCase().includes('vindicta'));
+
+                // 2. Beide Listen alphabetisch sortieren
+                vindictaPlayers.sort((a, b) => a.name.localeCompare(b.name));
+                otherPlayers.sort((a, b) => a.name.localeCompare(b.name));
+
+                // 3. Listen zusammenfügen (Vindicta zuerst)
+                const sortedPlayers = [...vindictaPlayers, ...otherPlayers];
+
+                // 4. Liste formatieren (Vindicta Mitglieder werden hervorgehoben)
+                playerListText = sortedPlayers.map(p => {
+                    if (p.name.toLowerCase().includes('vindicta')) {
+                        return `• **${p.name}** 👑`; 
+                    }
+                    return `• ${p.name}`;
+                }).join('\n');
                 
+                // Falls der Text für Discord zu lang wird
                 if (playerListText.length > 3500) {
-                    playerListText = playerListText.substring(0, 3500) + '\n*...und weitere Spieler*';
+                    playerListText = playerListText.substring(0, 3500) + '\n\n*...und weitere Spieler*';
                 }
             } else if (clients > 0) {
                 playerListText = '*Die Spielerliste wird vom Server aus Datenschutzgründen versteckt.*';
