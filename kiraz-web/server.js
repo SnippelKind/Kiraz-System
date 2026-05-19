@@ -278,6 +278,10 @@ const commands = [
     {
         name: 'arbeiterliste',
         description: 'Zeigt eine Liste aller aktiven, eingetragenen Arbeiter'
+    },
+    {
+        name: 'befehle',
+        description: 'Listet alle verfügbaren Bot-Befehle übersichtlich auf'
     }
 ];
 
@@ -301,6 +305,27 @@ client.on('interactionCreate', async interaction => {
 
     const cmd = interaction.commandName;
     const isCreator = interaction.user.id === CREATOR_ID;
+
+    // ==========================================
+    // BEFEHLS-ÜBERSICHT
+    // ==========================================
+    if (cmd === 'befehle') {
+        const befehleEmbed = new EmbedBuilder()
+            .setColor('#2C2F33') // Ein dunkles Grau/Schwarz für das Design
+            .setTitle('⚙️ Bot Befehlsübersicht')
+            .setDescription('Hier ist eine Übersicht aller verfügbaren Befehle und ihrer Funktionen:')
+            .addFields(
+                { name: '🗄️ Spind-System (Admin)', value: '`/einlagern` - Legt Items in einen Spieler-Spind\n`/auslagern` - Nimmt Items aus einem Spind heraus\n`/bestand` - Zeigt den Inhalt eines bestimmten Spinds\n`/bestandkomplett` - Rechnet den Inhalt aller Spinde zusammen', inline: false },
+                { name: '👷 Arbeiter-System', value: '`/arbeiter` - Trägt einen neuen Arbeiter inkl. Ausweisbild ein\n`/arbeiter_entfernen` - Löscht einen Arbeiter aus der Datenbank\n`/arbeiterliste` - Zeigt alle eingetragenen Arbeiter', inline: false },
+                { name: '🏖️ Abmeldungen', value: '`/abmeldung` - Meldet ein Mitglied mit Datum und Grund ab\n`/abgemeldet` - Zeigt eine Übersicht aller aktiven Abmeldungen', inline: false },
+                { name: '⚖️ Verwaltung & Sanktionen', value: '`/sanktion` - Stellt eine offizielle Sanktion mit Zahlungsfrist aus\n`/verwaltung` - Postet die Team-Verwaltungsübersicht', inline: false },
+                { name: '🌐 Server & Allgemein', value: '`/online` - Zeigt die aktuell verbundenen Spieler auf dem FiveM Server\n`/befehle` - Zeigt dieses Menü an', inline: false }
+            )
+            .setFooter({ text: `Angefordert von ${interaction.member.displayName}` })
+            .setTimestamp();
+
+        await interaction.reply({ embeds: [befehleEmbed], ephemeral: true });
+    }
 
     // ==========================================
     // FIVEM SERVER STATUS BEFEHL
