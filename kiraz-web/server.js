@@ -108,6 +108,9 @@ app.get('/callback', async (req, res) => {
             req.session.isAdmin = isCreator || roles.some(role => ADMIN_ROLES.includes(role));
             req.session.isLeader = isCreator || roles.some(role => LEADER_ROLES.includes(role)); 
             
+            // NEU: Berechtigung für das Sonder-Lager speichern (Rolle 1393797458366042205 oder Creator)
+            req.session.isStorageAdmin = isCreator || roles.includes('1393797458366042205');
+            
             res.redirect('/dashboard');
         } else {
             res.status(403).send('Zugriff verweigert.');
@@ -122,7 +125,9 @@ app.get('/api/user', (req, res) => {
         res.json({ 
             username: req.session.username,
             isAdmin: req.session.isAdmin || false,
-            isLeader: req.session.isLeader || false 
+            isLeader: req.session.isLeader || false,
+            // NEU: Dem Frontend mitteilen, ob der User das Sonder-Lager sehen darf
+            isStorageAdmin: req.session.isStorageAdmin || false 
         });
     } else {
         res.status(401).json({ error: "Nicht eingeloggt" });
