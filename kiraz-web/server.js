@@ -253,6 +253,10 @@ const commands = [
     {
         name: 'verwaltung',
         description: 'Sendet eine Team-Übersicht in den Verwaltungs-Channel (Admin)'
+    },
+    {
+        name: 'online',
+        description: 'Zeigt die aktuellen Spieler auf dem FiveM Server an (Admin)'
     }
 ];
 
@@ -278,6 +282,63 @@ client.on('interactionCreate', async interaction => {
     const isCreator = interaction.user.id === CREATOR_ID;
 
     // ==========================================
+    // FIVEM SERVER STATUS BEFEHL
+    // ==========================================
+    if (cmd === 'online') {
+        // NEU: Berechtigungsprüfung hinzugefügt
+        if (!isCreator && !interaction.member.roles.cache.has('1393797458366042205')) {
+            return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Befehl.', ephemeral: true });
+        }
+
+        await interaction.deferReply(); 
+
+        try {
+            const response = await axios.get('https://servers-frontend.fivem.net/api/servers/single/lvmkrv', {
+                headers: { 'User-Agent': 'Mozilla/5.0' } 
+            });
+            
+            const serverData = response.data.Data;
+            
+            if (!serverData) {
+                return interaction.editReply({ content: '❌ Der Server wurde nicht gefunden oder ist offline.' });
+            }
+
+            const clients = serverData.clients || 0;
+            const maxClients = serverData.sv_maxclients || 0;
+            const players = serverData.players || [];
+            
+            let playerListText = "";
+            if (players.length > 0) {
+                playerListText = players.map(p => `• ${p.name}`).join('\n');
+                
+                if (playerListText.length > 3500) {
+                    playerListText = playerListText.substring(0, 3500) + '\n*...und weitere Spieler*';
+                }
+            } else if (clients > 0) {
+                playerListText = '*Die Spielerliste wird vom Server aus Datenschutzgründen versteckt.*';
+            } else {
+                playerListText = '*Aktuell ist niemand online.*';
+            }
+
+            const onlineEmbed = new EmbedBuilder()
+                .setColor('#C0C0C0') 
+                .setTitle('🌐 FiveM Server Status')
+                .addFields(
+                    { name: '📊 Spieler Online', value: `**${clients}** / ${maxClients}`, inline: true },
+                    { name: '🔌 Verbinden (F8)', value: '`connect cfx.re/join/lvmkrv`', inline: true },
+                    { name: '👥 Spielerliste', value: playerListText, inline: false }
+                )
+                .setTimestamp();
+
+            await interaction.editReply({ embeds: [onlineEmbed] });
+
+        } catch (error) {
+            console.error("Fehler bei der FiveM API Abfrage:", error);
+            await interaction.editReply({ content: '❌ Der Server ist aktuell nicht erreichbar oder die Abfrage wurde blockiert.' });
+        }
+    }
+
+    // ==========================================
     // SPIND BEFEHLE (Rolle: 1393797458366042205)
     // ==========================================
     if (['einlagern', 'auslagern', 'bestand', 'bestandkomplett'].includes(cmd)) {
@@ -285,7 +346,6 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Spind-Befehl.', ephemeral: true });
         }
 
-        // VERHINDERT DEN ABSTURZ (Gibt dem Bot bis zu 15 Minuten Zeit zum Rechnen)
         await interaction.deferReply();
 
         if (cmd === 'einlagern' || cmd === 'auslagern') {
@@ -549,7 +609,7 @@ client.on('interactionCreate', async interaction => {
             await interaction.editReply({ content: '❌ Es gab einen Fehler beim Senden der Nachricht.' });
         }
     }
-}); // <-- Diese Klammer war vorher der Übeltäter und ist jetzt wieder da!
+}); 
 
 // ==========================================
 // AUTO-CHECK FÜR ABGELAUFENE ABMELDUNGEN
@@ -595,7 +655,6 @@ client.on('guildMemberAdd', async member => {
     const channel = member.guild.channels.cache.get(welcomeChannelId);
     if (!channel) return;
 
-    // Discord Timestamps berechnen
     const joinedUnix = member.joinedTimestamp ? Math.floor(member.joinedTimestamp / 1000) : null;
     const createdUnix = member.user.createdTimestamp ? Math.floor(member.user.createdTimestamp / 1000) : null;
 
@@ -603,13 +662,11 @@ client.on('guildMemberAdd', async member => {
     statsText += `> 📥 Gejoint: ${joinedUnix ? `<t:${joinedUnix}:F> (<t:${joinedUnix}:R>)` : 'Unbekannt'}\n`;
     statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
 
-    // 1. Embed: Nur für das Banner ganz oben
     const bannerEmbed = new EmbedBuilder()
         .setColor('#FFFFFF') 
         .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732015272759429/image.png?ex=6a0bb1b7&is=6a0a6037&hm=da349e511e00103f31399c7d779ed5c160bdaded95a7955791ec0848e860568f&')
         .setURL('https://vindicta.com');
 
-    // 2. Embed: Für den Text direkt darunter
     const textEmbed = new EmbedBuilder()
         .setColor('#FFFFFF') 
         .setDescription(`👋 **Willkommen** <@${member.id}>` + statsText)
@@ -632,13 +689,11 @@ client.on('guildMemberRemove', async member => {
     statsText += `> 📤 Verlassen: <t:${leftUnix}:F> (<t:${leftUnix}:R>)\n`;
     statsText += `> 📅 Account erstellt: ${createdUnix ? `<t:${createdUnix}:F> (<t:${createdUnix}:R>)` : 'Unbekannt'}`;
 
-    // 1. Embed: Nur für das Banner ganz oben
     const bannerEmbed = new EmbedBuilder()
         .setColor('#444444') 
         .setImage('https://cdn.discordapp.com/attachments/946785663360049183/1505732048575529151/image.png?ex=6a0bb1bf&is=6a0a603f&hm=8185ea7d37887f3b2874ffd304fce7125d81dd902092aadef48415c689712ff3&')
         .setURL('https://vindicta.com');
 
-    // 2. Embed: Für den Text direkt darunter
     const textEmbed = new EmbedBuilder()
         .setColor('#444444') 
         .setDescription(`👋 **Auf Wiedersehen** **${userName}**` + statsText)
