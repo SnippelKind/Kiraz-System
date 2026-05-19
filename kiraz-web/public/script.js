@@ -100,7 +100,6 @@ db.collection("online").onSnapshot((snapshot) => {
 
     let now = Date.now();
     let members = [];
-    // Wichtig: Wir speichern jetzt auch die ID (doc.id) mit ab
     snapshot.forEach(doc => members.push({ id: doc.id, ...doc.data() }));
 
     members.sort((a, b) => b.lastActive - a.lastActive);
@@ -111,13 +110,11 @@ db.collection("online").onSnapshot((snapshot) => {
     members.forEach(data => {
         let diff = now - data.lastActive;
         
-        // NEU: Wenn sich der User länger als 2 Minuten (120.000 ms) nicht gemeldet hat:
         if (diff > 120000) {
-            // Ausblenden und Datenbank bereinigen (nur Admins oder der User selbst räumen auf, um Spam zu vermeiden)
             if (isUserAdmin || data.username === currentUser) {
                 db.collection("online").doc(data.id).delete().catch(err => {});
             }
-            return; // Überspringt diesen User, er wird nicht mehr angezeigt!
+            return; 
         }
 
         let isOnline = diff < 35000;
@@ -223,8 +220,8 @@ const munitionRezepte = {
 };
 
 const smeltRezepte = {
-    "Metall": { mats: { "Metallerz": 2 }, time: 5 }, // 5 Sekunden pro Metall (kannst du anpassen)
-    "Waffenrahmen": { mats: { "Metall": 7 }, time: 15 } // 15 Sekunden pro Rahmen
+    "Metall": { mats: { "Metallerz": 2 }, time: 5 }, 
+    "Waffenrahmen": { mats: { "Metall": 7 }, time: 15 } 
 };
 
 function showDashboard() {
@@ -239,6 +236,7 @@ function showDashboard() {
     document.getElementById('geldwaescheTab').style.display = "none"; 
     document.getElementById('schwarzmarktTab').style.display = "none"; 
     document.getElementById('spindTab').style.display = "none";
+    document.getElementById('specialStorageTab').style.display = "none";
     document.getElementById('checklistTab').style.display = "none";
     document.getElementById('timerTab').style.display = "none";
     document.getElementById('smeltTab').style.display = "none";
@@ -255,7 +253,88 @@ function openRoute(tabId) {
     window.scrollTo(0,0);
 }
 
-// --- SPIND / INVENTAR LOGIK ---
+// =========================================
+// NEU: SONDER LAGER LOGIK (10ner & Main)
+// =========================================
+let specialStorageUnsubscribe = null;
+
+function loadSpecialStorage() {
+    const selectedLager = document.getElementById("specialStorageSelect").value;
+    listenToSpecialStorage(selectedLager);
+}
+
+function listenToSpecialStorage(lagerName) {
+    if (specialStorageUnsubscribe) specialStorageUnsubscribe();
+    
+    const list = document.getElementById("specialStorageList");
+    list.innerHTML = "<p style='color:#aaa; text-align:center;'>Lade Daten...</p>";
+
+    specialStorageUnsubscribe = db.collection("lockers").doc(lagerName).onSnapshot(doc => {
+        if (!doc.exists) {
+            list.innerHTML = "<p style='color:#aaa; text-align:center;'>Lager ist leer.</p>";
+            return;
+        }
+        const data = doc.data().items || {};
+        
+        list.innerHTML = "";
+        let empty = true;
+        for (let item in data) {
+            if (data[item] > 0) {
+                empty = false;
+                list.innerHTML += `
+                <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #3e3e5e; background: rgba(255,255,255,0.02); margin-bottom: 5px; border-radius: 5px;">
+                    <span style="color:#fff; font-weight:bold; font-size: 1.1em;">📦 ${item}</span>
+                    <span style="color:#ffaa00; font-weight:bold; font-size: 1.1em;">${data[item]}x</span>
+                </div>`;
+            }
+        }
+        if (empty) {
+            list.innerHTML = "<p style='color:#aaa; text-align:center;'>Lager ist leer.</p>";
+        }
+    });
+}
+
+function updateSpecialStorageItem(action) {
+    const lagerName = document.getElementById("specialStorageSelect").value;
+    const itemName = document.getElementById("specialStorageItemName").value.trim();
+    const amount = parseInt(document.getElementById("specialStorageItemAmount").value);
+    
+    if (!itemName || isNaN(amount) || amount <= 0) {
+        alert("Bitte einen Gegenstand und eine gültige Anzahl eingeben.");
+        return;
+    }
+
+    const docRef = db.collection("lockers").doc(lagerName);
+
+    db.runTransaction(transaction => {
+        return transaction.get(docRef).then(doc => {
+            let items = {};
+            if (doc.exists) {
+                items = doc.data().items || {};
+            }
+
+            let currentAmount = items[itemName] || 0;
+            if (action === 'add') {
+                items[itemName] = currentAmount + amount;
+            } else if (action === 'remove') {
+                items[itemName] = Math.max(0, currentAmount - amount); 
+            }
+
+            transaction.set(docRef, { items: items }, { merge: true });
+        });
+    }).then(() => {
+        document.getElementById("specialStorageItemName").value = "";
+        document.getElementById("specialStorageItemAmount").value = "";
+        
+        let actText = action === 'add' ? 'eingelagert' : 'entnommen';
+        let displayName = lagerName === '10ner_Lager' ? '10ner Lager' : 'Mainlager';
+        addLog("Sonder-Lager genutzt", `${amount}x ${itemName} im ${displayName} ${actText}.`);
+    }).catch(err => console.error("Fehler beim Lager Update:", err));
+}
+
+// =========================================
+// SPIND / INVENTAR LOGIK
+// =========================================
 let currentSpindViewUser = "";
 let spindUnsubscribe = null;
 
@@ -344,7 +423,7 @@ function updateSpindItem(action) {
     }).catch(err => console.error("Fehler beim Spind Update:", err));
 }
 
-// --- AUTO-CLEANUP LOGIK (Löscht veraltete User) ---
+// --- AUTO-CLEANUP LOGIK ---
 function autoCleanupDatabase() {
     if (!isUserLeader && !isUserAdmin) return;
 
@@ -358,6 +437,9 @@ function autoCleanupDatabase() {
 
             db.collection("lockers").get().then(snapshot => {
                 snapshot.forEach(doc => {
+                    // WICHTIG: Die Sonder-Lager (10ner & Main) niemals beim Cleanup löschen!
+                    if (doc.id === "10ner_Lager" || doc.id === "Mainlager") return;
+                    
                     if (!validUsernames.includes(doc.id)) {
                         db.collection("lockers").doc(doc.id).delete()
                             .then(() => {
@@ -968,7 +1050,6 @@ function renderShop() {
 }
 
 function addToCart(itemName, priceStr) {
-    // Wandelt "12.375 €" in die Zahl 12375 um, damit wir damit rechnen können
     let numericPrice = parseInt(priceStr.replace(/\D/g, ''));
     
     if (shoppingCart[itemName]) {
@@ -1049,7 +1130,6 @@ function checkoutCart() {
 
     if (confirm(`Bist du sicher?\n\nKaufpreis: ${totalPrice.toLocaleString('de-DE')} €\n\nInhalt:\n- ${summary.join("\n- ")}`)) {
         
-        // Log in die Datenbank eintragen
         addLog("Schwarzmarkt Einkauf", `Hat für ${totalPrice.toLocaleString('de-DE')} € folgendes bestellt: ${summary.join(", ")}`);
         
         clearCart();
@@ -1316,6 +1396,11 @@ fetch('/api/user')
             document.getElementById('userNameDisplay').innerText = data.username;
             document.getElementById('userProfile').style.display = "flex";
             
+            // NEU: Berechtigung für Sonder-Lager prüfen
+            if(data.isStorageAdmin) {
+                document.getElementById('specialStorageBtn').style.display = "inline-block";
+            }
+
             if(data.isAdmin) {
                 isUserAdmin = true; 
                 document.getElementById('deleteAllBtn').style.display = "block";
@@ -1332,7 +1417,6 @@ fetch('/api/user')
             
             updateOnlineStatus();
 
-            // Wenn der User Admin oder Leader ist, starte den Aufräum-Prozess nach 3 Sekunden
             if (isUserAdmin || isUserLeader) {
                 setTimeout(autoCleanupDatabase, 3000); 
             }
@@ -1340,10 +1424,8 @@ fetch('/api/user')
     })
     .catch(error => console.log("Fehler beim Laden des Users:", error));
 
-// NEU: Sofortige Löschung aus der Online-Liste, wenn der Browser/Tab geschlossen wird
 window.addEventListener("beforeunload", () => {
     if (currentUser && currentUser !== "Unbekannt") {
-        // Meldet den User beim Verlassen sofort ab
         db.collection("online").doc(currentUser).delete();
     }
 });
