@@ -269,6 +269,13 @@ const commands = [
         ]
     },
     {
+        name: 'arbeiter_entfernen',
+        description: 'Trägt einen Arbeiter aus der Liste wieder aus',
+        options: [
+            { name: 'name', type: 3, description: 'Exakter Vor- und Nachname des Arbeiters', required: true }
+        ]
+    },
+    {
         name: 'arbeiterliste',
         description: 'Zeigt eine Liste aller aktiven, eingetragenen Arbeiter'
     }
@@ -681,6 +688,40 @@ client.on('interactionCreate', async interaction => {
         } catch (error) {
             console.error("Fehler beim Speichern des Arbeiters:", error);
             await interaction.reply({ content: '❌ Fehler beim Speichern in der Datenbank.', ephemeral: true });
+        }
+    }
+
+    if (cmd === 'arbeiter_entfernen') {
+        const arbeiterName = interaction.options.getString('name');
+        await interaction.deferReply();
+
+        try {
+            // Suchen nach dem Arbeiter-Namen in der Datenbank
+            const snapshot = await db.collection('arbeiter').where('arbeiterName', '==', arbeiterName).get();
+            
+            if (snapshot.empty) {
+                return interaction.editReply({ content: `❌ Konnte keinen Arbeiter mit dem Namen **${arbeiterName}** finden.` });
+            }
+
+            // Arbeiter aus der Datenbank löschen
+            const batch = db.batch();
+            snapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+
+            const embed = new EmbedBuilder()
+                .setColor('#E74C3C') // Rot
+                .setTitle('🛑 Arbeiter Ausgetragen')
+                .setDescription(`Der Arbeiter **${arbeiterName}** wurde erfolgreich entlassen / ausgetragen.`)
+                .setFooter({ text: `Ausgetragen von ${interaction.member.displayName}` })
+                .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
+
+        } catch (error) {
+            console.error("Fehler beim Löschen des Arbeiters:", error);
+            await interaction.editReply({ content: '❌ Datenbank Fehler beim Austragen.' });
         }
     }
 
