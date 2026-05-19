@@ -264,7 +264,8 @@ const commands = [
         options: [
             { name: 'vom_wem', type: 6, description: 'Welches Fraktionsmitglied hat ihn eingestellt?', required: true },
             { name: 'name', type: 3, description: 'Vor- und Nachname des Arbeiters', required: true },
-            { name: 'ausweis', type: 11, description: 'Bild vom Ausweis (Datei hochladen)', required: true }
+            { name: 'ausweis', type: 11, description: 'Bild vom Ausweis (Datei hochladen)', required: true },
+            { name: 'telefonnummer', type: 3, description: 'Telefonnummer des Arbeiters', required: false }
         ]
     },
     {
@@ -646,6 +647,7 @@ client.on('interactionCreate', async interaction => {
         const vomWem = interaction.options.getMember('vom_wem');
         const arbeiterName = interaction.options.getString('name');
         const ausweis = interaction.options.getAttachment('ausweis');
+        const telefonnummer = interaction.options.getString('telefonnummer') || 'Nicht angegeben';
 
         if (!vomWem) return interaction.reply({ content: '❌ Mitglied (Vom wem) nicht gefunden.', ephemeral: true });
 
@@ -658,7 +660,8 @@ client.on('interactionCreate', async interaction => {
             .setTitle('👷 Neuer Arbeiter Eingetragen')
             .addFields(
                 { name: '👤 Eingestellt von', value: `<@${vomWem.id}>`, inline: true },
-                { name: '🛠️ Name des Arbeiters', value: arbeiterName, inline: true }
+                { name: '🛠️ Name des Arbeiters', value: arbeiterName, inline: true },
+                { name: '📞 Telefonnummer', value: telefonnummer, inline: false }
             )
             .setImage(ausweis.url)
             .setFooter({ text: `Eingetragen von ${interaction.member.displayName}` })
@@ -669,6 +672,7 @@ client.on('interactionCreate', async interaction => {
                 vomWemId: vomWem.id,
                 arbeiterName: arbeiterName,
                 ausweisUrl: ausweis.url,
+                telefonnummer: telefonnummer,
                 eingetragenVon: interaction.user.id,
                 timestamp: Date.now()
             });
@@ -699,7 +703,8 @@ client.on('interactionCreate', async interaction => {
 
             snapshot.forEach(doc => {
                 const data = doc.data();
-                listText += `• **${data.arbeiterName}** *(Eingestellt von: <@${data.vomWemId}>)*\n`;
+                const tel = data.telefonnummer ? data.telefonnummer : 'Keine Nummer';
+                listText += `• **${data.arbeiterName}** [📞 ${tel}] *(Eingestellt von: <@${data.vomWemId}>)*\n`;
                 count++;
             });
 
