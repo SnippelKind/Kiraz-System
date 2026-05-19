@@ -257,6 +257,19 @@ const commands = [
     {
         name: 'online',
         description: 'Zeigt die aktuellen Spieler auf dem FiveM Server an (Admin)'
+    },
+    {
+        name: 'arbeiter',
+        description: 'Trägt einen neuen Arbeiter ein',
+        options: [
+            { name: 'vom_wem', type: 6, description: 'Welches Fraktionsmitglied hat ihn eingestellt?', required: true },
+            { name: 'name', type: 3, description: 'Vor- und Nachname des Arbeiters', required: true },
+            { name: 'ausweis', type: 11, description: 'Bild vom Ausweis (Datei hochladen)', required: true }
+        ]
+    },
+    {
+        name: 'arbeiterliste',
+        description: 'Zeigt eine Liste aller aktiven, eingetragenen Arbeiter'
     }
 ];
 
@@ -281,7 +294,7 @@ client.on('interactionCreate', async interaction => {
     const cmd = interaction.commandName;
     const isCreator = interaction.user.id === CREATOR_ID;
 
-// ==========================================
+    // ==========================================
     // FIVEM SERVER STATUS BEFEHL
     // ==========================================
     if (cmd === 'online') {
@@ -289,7 +302,6 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ Du hast keine Berechtigung für diesen Befehl.', ephemeral: true });
         }
 
-        // Wir antworten kurz im Channel (nur für dich sichtbar), damit der Befehl nicht abstürzt
         await interaction.deferReply({ ephemeral: true }); 
 
         try {
@@ -343,20 +355,14 @@ client.on('interactionCreate', async interaction => {
                 )
                 .setTimestamp();
 
-            // NEU: Bot schickt dir eine echte Private Nachricht (DM) in dein Discord
             await interaction.user.send({ embeds: [onlineEmbed] });
-            
-            // Kurze Bestätigung im Channel (die verschwindet)
             await interaction.editReply({ content: '✅ Ich habe dir die Server-Liste per privater Nachricht (DM) gesendet!' });
 
         } catch (error) {
             console.error("Fehler bei der FiveM API Abfrage:", error);
-            
-            // Falls du DMs in deinen Discord-Einstellungen deaktiviert hast, sagt dir der Bot Bescheid
             if (error.code === 50007) {
                 return interaction.editReply({ content: '❌ Ich kann dir keine Nachricht schicken. Bitte erlaube Direktnachrichten in deinen Server-Datenschutzeinstellungen!' });
             }
-            
             await interaction.editReply({ content: '❌ Der Server ist aktuell nicht erreichbar oder die Abfrage wurde blockiert.' });
         }
     }
@@ -630,6 +636,80 @@ client.on('interactionCreate', async interaction => {
         } catch (error) {
             console.error("Fehler beim Erstellen der Verwaltungs-Übersicht:", error);
             await interaction.editReply({ content: '❌ Es gab einen Fehler beim Senden der Nachricht.' });
+        }
+    }
+
+    // ==========================================
+    // ARBEITER BEFEHLE
+    // ==========================================
+    if (cmd === 'arbeiter') {
+        const vomWem = interaction.options.getMember('vom_wem');
+        const arbeiterName = interaction.options.getString('name');
+        const ausweis = interaction.options.getAttachment('ausweis');
+
+        if (!vomWem) return interaction.reply({ content: '❌ Mitglied (Vom wem) nicht gefunden.', ephemeral: true });
+
+        if (!ausweis.contentType || !ausweis.contentType.startsWith('image/')) {
+            return interaction.reply({ content: '❌ Bitte lade eine gültige Bilddatei für den Ausweis hoch!', ephemeral: true });
+        }
+
+        const embed = new EmbedBuilder()
+            .setColor('#F1C40F') 
+            .setTitle('👷 Neuer Arbeiter Eingetragen')
+            .addFields(
+                { name: '👤 Eingestellt von', value: `<@${vomWem.id}>`, inline: true },
+                { name: '🛠️ Name des Arbeiters', value: arbeiterName, inline: true }
+            )
+            .setImage(ausweis.url)
+            .setFooter({ text: `Eingetragen von ${interaction.member.displayName}` })
+            .setTimestamp();
+
+        try {
+            await db.collection('arbeiter').add({
+                vomWemId: vomWem.id,
+                arbeiterName: arbeiterName,
+                ausweisUrl: ausweis.url,
+                eingetragenVon: interaction.user.id,
+                timestamp: Date.now()
+            });
+            
+            await interaction.reply({ embeds: [embed] });
+        } catch (error) {
+            console.error("Fehler beim Speichern des Arbeiters:", error);
+            await interaction.reply({ content: '❌ Fehler beim Speichern in der Datenbank.', ephemeral: true });
+        }
+    }
+
+    if (cmd === 'arbeiterliste') {
+        await interaction.deferReply();
+
+        try {
+            const snapshot = await db.collection('arbeiter').orderBy('timestamp', 'desc').get();
+            
+            if (snapshot.empty) {
+                return interaction.editReply({ content: '✅ Es sind aktuell keine Arbeiter eingetragen.' });
+            }
+
+            const listEmbed = new EmbedBuilder()
+                .setColor('#C0C0C0')
+                .setTitle('📋 Aktive Arbeiterliste');
+
+            let listText = "";
+            let count = 0;
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                listText += `• **${data.arbeiterName}** *(Eingestellt von: <@${data.vomWemId}>)*\n`;
+                count++;
+            });
+
+            listEmbed.setDescription(listText);
+            listEmbed.setFooter({ text: `Insgesamt ${count} aktive Arbeiter` });
+
+            await interaction.editReply({ embeds: [listEmbed] });
+        } catch (error) {
+            console.error("Fehler bei /arbeiterliste:", error);
+            await interaction.editReply({ content: '❌ Datenbank Fehler beim Abrufen der Arbeiterliste.' });
         }
     }
 }); 
