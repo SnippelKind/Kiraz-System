@@ -244,6 +244,7 @@ function showDashboard() {
     document.getElementById('logTab').style.display = "none";
     document.getElementById('onlineTab').style.display = "none"; 
     document.getElementById('backBtn').style.display = "none";
+    document.getElementById('waffenVerkaufTab').style.display = "none";
 }
 
 function openRoute(tabId) {
@@ -1429,3 +1430,58 @@ window.addEventListener("beforeunload", () => {
         db.collection("online").doc(currentUser).delete();
     }
 });
+
+const verkaufPreise = {
+    "SNS Pistole": { "Grün": 100000, "Schwarz": 120000 },
+    "Normale Pistole": { "Grün": 170000, "Schwarz": 205000 },
+    "MK2 Pistole": { "Grün": 220000, "Schwarz": 240000 },
+    "50. Pistole": { "Grün": 200000, "Schwarz": 265000 },
+    "Mikro SMG": { "Grün": 500000, "Schwarz": 600000 },
+    "Abgesägte Schrottflinte": { "Grün": 750000, "Schwarz": 900000 }
+};
+
+function sellWeapon() {
+    let weapon = document.getElementById("verkaufWeaponSelect").value;
+    let moneyType = document.getElementById("verkaufMoneyType").value;
+    let amount = parseInt(document.getElementById("verkaufAmount").value) || 1;
+    let discount = document.getElementById("verkaufDiscount").checked;
+    let result = document.getElementById("verkaufResult");
+
+    if (!weapon) {
+        result.innerText = "Bitte Waffe auswählen!";
+        result.style.color = "#ff6b6b";
+        return;
+    }
+
+    let basePrice = verkaufPreise[weapon][moneyType] * amount;
+    let finalPrice = discount ? basePrice * 0.9 : basePrice;
+
+    if(confirm(`Möchtest du ${amount}x ${weapon} für ${finalPrice.toLocaleString('de-DE')} € ${moneyType}geld verkaufen?`)) {
+        fetch('/api/sell-weapon', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                weapon: weapon,
+                moneyType: moneyType,
+                amount: amount,
+                discount: discount,
+                totalPrice: finalPrice
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                result.innerText = `✅ Erfolgreich für ${finalPrice.toLocaleString('de-DE')} € verkauft und geloggt!`;
+                result.style.color = "#77dd77";
+                addLog("Waffen Verkauf", `${amount}x ${weapon} für ${finalPrice.toLocaleString('de-DE')} € (${moneyType})`);
+            } else {
+                result.innerText = "❌ Fehler beim Loggen ins Discord.";
+                result.style.color = "#ff6b6b";
+            }
+        }).catch(err => {
+            console.error(err);
+            result.innerText = "❌ Serverfehler.";
+            result.style.color = "#ff6b6b";
+        });
+    }
+}
