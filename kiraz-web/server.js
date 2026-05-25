@@ -181,21 +181,25 @@ app.get('/api/faction-members', async (req, res) => {
 app.post('/api/sell-weapon', async (req, res) => {
     if (!req.session.isAuthorized) return res.status(401).json({ success: false, error: "Nicht autorisiert" });
 
-    const { weapon, moneyType, amount, discount, totalPrice } = req.body;
+    const { items, moneyType, discount, totalPrice } = req.body;
     const seller = req.session.username;
     
     try {
         const channel = await client.channels.fetch('1508425026846593214'); // Log-Channel-ID
         if (channel) {
+            
+            // Verkaufsliste formatieren
+            const itemsList = items.map(i => `> **${i.amount}x** ${i.weapon}`).join('\n');
+
             const embed = new EmbedBuilder()
-                .setColor('#000000') // Schwarzes Embed (Schwarz/Weiß gewünscht)
+                .setColor('#000000') // Schwarzes Embed
                 .setTitle('🔫 Waffen Verkauf')
                 .addFields(
                     { name: '👤 Verkäufer', value: seller, inline: true },
-                    { name: '🛒 Waffe', value: `${amount}x ${weapon}`, inline: true },
-                    { name: '💵 Preis', value: `${totalPrice.toLocaleString('de-DE')} €`, inline: true },
+                    { name: '💵 Gesamtpreis', value: `${totalPrice.toLocaleString('de-DE')} €`, inline: true },
                     { name: '💰 Geldart', value: moneyType === 'Grün' ? 'Grüngeld' : 'Schwarzgeld', inline: true },
-                    { name: '🏷️ Rabatt (10%)', value: discount ? '✅ Ja' : '❌ Nein', inline: true }
+                    { name: '🛒 Verkaufte Waffen', value: itemsList, inline: false },
+                    { name: '🏷️ 10% Rabatt genutzt', value: discount ? '✅ Ja' : '❌ Nein', inline: false }
                 )
                 .setTimestamp();
 
@@ -209,7 +213,6 @@ app.post('/api/sell-weapon', async (req, res) => {
         res.status(500).json({ success: false });
     }
 });
-
 app.get('/dashboard', (req, res) => {
     if (!req.session.isAuthorized) return res.redirect('/');
     res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
