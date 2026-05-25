@@ -73,6 +73,11 @@
             <img src="/public/SCHWARZMARKT.png" alt="Schwarzmarkt" onerror="this.style.opacity='0'">
             <div class="route-title">Schwarzmarkt</div>
         </div>
+        <div class="route-card" onclick="openRoute('waffenVerkaufTab')">
+            <div class="fallback-icon">💰</div>
+            <img src="/public/WAFFEN ROUTE.png" alt="Waffen Verkauf" onerror="this.style.opacity='0'">
+            <div class="route-title">Waffen Verkauf</div>
+        </div>
     </div>
 
     <div class="tabs">
@@ -240,6 +245,40 @@
             <button class="btn-action" onclick="clearCart()" style="background: #444; color: #fff; margin-top: 10px;">🗑️ Leeren</button>
         </div>
 
+    </div>
+</div>
+
+    <div id="waffenVerkaufTab" style="display:none;">
+    <div class="box box-large">
+        <h2 style="color:#ffffff">💰 Waffen Verkauf</h2>
+        <p style="color:#ccc;">Verkaufe Waffen und logge es direkt im Discord.</p>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+            <select id="verkaufWeaponSelect" style="flex: 2; min-width: 200px;">
+                <option value="" disabled selected>-- Waffe wählen --</option>
+                <option value="SNS Pistole">SNS Pistole</option>
+                <option value="Normale Pistole">Normale Pistole</option>
+                <option value="MK2 Pistole">MK2 Pistole</option>
+                <option value="50. Pistole">50. Pistole</option>
+                <option value="Mikro SMG">Mikro SMG</option>
+                <option value="Abgesägte Schrottflinte">Abgesägte Schrottflinte</option>
+            </select>
+            
+            <select id="verkaufMoneyType" style="flex: 1; min-width: 150px;">
+                <option value="Grün">Grüngeld</option>
+                <option value="Schwarz">Schwarzgeld</option>
+            </select>
+
+            <input type="number" id="verkaufAmount" placeholder="Anzahl..." style="flex: 1; min-width: 100px;" value="1" min="1">
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
+            <input type="checkbox" id="verkaufDiscount" style="width: 20px; height: 20px;">
+            <label for="verkaufDiscount" style="color: white; font-weight: bold;">10% Rabatt anwenden</label>
+        </div>
+
+        <button class="btn-action" onclick="sellWeapon()" style="background: #ffffff; color: #000000;">🛒 Verkaufen & Loggen</button>
+        <p id="verkaufResult" class="result"></p>
     </div>
 </div>
 
