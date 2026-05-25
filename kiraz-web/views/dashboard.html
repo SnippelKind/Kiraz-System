@@ -248,28 +248,44 @@
     </div>
 </div>
 
-    <div id="waffenVerkaufTab" style="display:none;">
+   <div id="waffenVerkaufTab" style="display:none;">
     <div class="box box-large">
         <h2 style="color:#ffffff">💰 Waffen Verkauf</h2>
-        <p style="color:#ccc;">Verkaufe Waffen und logge es direkt im Discord.</p>
+        <p style="color:#ccc;">Verkaufe mehrere Waffen gleichzeitig und logge es direkt im Discord.</p>
         
-        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-            <select id="verkaufWeaponSelect" style="flex: 2; min-width: 200px;">
-                <option value="" disabled selected>-- Waffe wählen --</option>
-                <option value="SNS Pistole">SNS Pistole</option>
-                <option value="Normale Pistole">Normale Pistole</option>
-                <option value="MK2 Pistole">MK2 Pistole</option>
-                <option value="50. Pistole">50. Pistole</option>
-                <option value="Mikro SMG">Mikro SMG</option>
-                <option value="Abgesägte Schrottflinte">Abgesägte Schrottflinte</option>
+        <div id="weaponList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 8px;">
+                <span>SNS Pistole</span>
+                <input type="number" id="verkauf_sns" min="0" value="0" style="width: 80px; text-align: center;">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 8px;">
+                <span>Normale Pistole</span>
+                <input type="number" id="verkauf_pistole" min="0" value="0" style="width: 80px; text-align: center;">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 8px;">
+                <span>MK2 Pistole</span>
+                <input type="number" id="verkauf_mk2" min="0" value="0" style="width: 80px; text-align: center;">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 8px;">
+                <span>50. Pistole</span>
+                <input type="number" id="verkauf_50" min="0" value="0" style="width: 80px; text-align: center;">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 8px;">
+                <span>Mikro SMG</span>
+                <input type="number" id="verkauf_smg" min="0" value="0" style="width: 80px; text-align: center;">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 8px;">
+                <span>Abgesägte Schrottflinte</span>
+                <input type="number" id="verkauf_schrot" min="0" value="0" style="width: 80px; text-align: center;">
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display:block; margin-bottom: 5px; color: #ccc;">Zahlungsart:</label>
+            <select id="verkaufMoneyType" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2);">
+                <option value="Grün" style="color: black;">Grüngeld</option>
+                <option value="Schwarz" style="color: black;">Schwarzgeld</option>
             </select>
-            
-            <select id="verkaufMoneyType" style="flex: 1; min-width: 150px;">
-                <option value="Grün">Grüngeld</option>
-                <option value="Schwarz">Schwarzgeld</option>
-            </select>
-
-            <input type="number" id="verkaufAmount" placeholder="Anzahl..." style="flex: 1; min-width: 100px;" value="1" min="1">
         </div>
 
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
@@ -277,8 +293,8 @@
             <label for="verkaufDiscount" style="color: white; font-weight: bold;">10% Rabatt anwenden</label>
         </div>
 
-        <button class="btn-action" onclick="sellWeapon()" style="background: #ffffff; color: #000000;">🛒 Verkaufen & Loggen</button>
-        <p id="verkaufResult" class="result"></p>
+        <button class="btn-action" onclick="sellWeapons()" style="background: #ffffff; color: #000000;">🛒 Verkaufen & Loggen</button>
+        <p id="verkaufResult" class="result" style="margin-top: 15px;"></p>
     </div>
 </div>
 
