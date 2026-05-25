@@ -1432,13 +1432,74 @@ window.addEventListener("beforeunload", () => {
 });
 
 const verkaufPreise = {
-    "SNS Pistole": { "Grün": 100000, "Schwarz": 120000 },
-    "Normale Pistole": { "Grün": 170000, "Schwarz": 205000 },
-    "MK2 Pistole": { "Grün": 220000, "Schwarz": 240000 },
-    "50. Pistole": { "Grün": 200000, "Schwarz": 265000 },
-    "Mikro SMG": { "Grün": 500000, "Schwarz": 600000 },
-    "Abgesägte Schrottflinte": { "Grün": 750000, "Schwarz": 900000 }
+    "SNS Pistole": { "Grün": 100000, "Schwarz": 120000, id: "verkauf_sns" },
+    "Normale Pistole": { "Grün": 170000, "Schwarz": 205000, id: "verkauf_pistole" },
+    "MK2 Pistole": { "Grün": 220000, "Schwarz": 240000, id: "verkauf_mk2" },
+    "50. Pistole": { "Grün": 200000, "Schwarz": 265000, id: "verkauf_50" },
+    "Mikro SMG": { "Grün": 500000, "Schwarz": 600000, id: "verkauf_smg" },
+    "Abgesägte Schrottflinte": { "Grün": 750000, "Schwarz": 900000, id: "verkauf_schrot" }
 };
+
+function sellWeapons() {
+    let moneyType = document.getElementById("verkaufMoneyType").value;
+    let discount = document.getElementById("verkaufDiscount").checked;
+    let result = document.getElementById("verkaufResult");
+
+    let cart = [];
+    let basePrice = 0;
+
+    // Alle Waffeninputs durchgehen und schauen ob > 0
+    for (let [weapon, data] of Object.entries(verkaufPreise)) {
+        let amount = parseInt(document.getElementById(data.id).value) || 0;
+        if (amount > 0) {
+            cart.push({ weapon: weapon, amount: amount });
+            basePrice += (data[moneyType] * amount);
+        }
+    }
+
+    if (cart.length === 0) {
+        result.innerText = "❌ Bitte bei mindestens einer Waffe eine Anzahl eintragen!";
+        result.style.color = "#ff6b6b";
+        return;
+    }
+
+    let finalPrice = discount ? basePrice * 0.9 : basePrice;
+    let cartString = cart.map(item => `${item.amount}x ${item.weapon}`).join('\n');
+
+    if(confirm(`Möchtest du folgende Waffen für insgesamt ${finalPrice.toLocaleString('de-DE')} € ${moneyType}geld verkaufen?\n\n${cartString}`)) {
+        fetch('/api/sell-weapon', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                items: cart, // Wir senden jetzt ein Array an Waffen!
+                moneyType: moneyType,
+                discount: discount,
+                totalPrice: finalPrice
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                result.innerText = `✅ Erfolgreich für ${finalPrice.toLocaleString('de-DE')} € verkauft und geloggt!`;
+                result.style.color = "#77dd77";
+                
+                // Formular zurücksetzen
+                for (let data of Object.values(verkaufPreise)) {
+                    document.getElementById(data.id).value = 0;
+                }
+                document.getElementById("verkaufDiscount").checked = false;
+
+            } else {
+                result.innerText = "❌ Fehler beim Loggen ins Discord.";
+                result.style.color = "#ff6b6b";
+            }
+        }).catch(err => {
+            console.error(err);
+            result.innerText = "❌ Serverfehler.";
+            result.style.color = "#ff6b6b";
+        });
+    }
+}
 
 function sellWeapon() {
     let weapon = document.getElementById("verkaufWeaponSelect").value;
