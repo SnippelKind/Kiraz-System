@@ -56,6 +56,10 @@ app.use(session({
     cookie: { maxAge: 1000 * 60 * 60 * 24 }
 }));
 
+// Express JSON Parser für den Waffen-Verkauf (API POST Requests)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
@@ -170,6 +174,39 @@ app.get('/api/faction-members', async (req, res) => {
         res.json(factionMembers);
     } catch (err) {
         res.status(500).json({ error: "Discord API Fehler" });
+    }
+});
+
+// --- API Endpoint: Waffen Verkauf & Discord Logging ---
+app.post('/api/sell-weapon', async (req, res) => {
+    if (!req.session.isAuthorized) return res.status(401).json({ success: false, error: "Nicht autorisiert" });
+
+    const { weapon, moneyType, amount, discount, totalPrice } = req.body;
+    const seller = req.session.username;
+    
+    try {
+        const channel = await client.channels.fetch('1508425026846593214'); // Log-Channel-ID
+        if (channel) {
+            const embed = new EmbedBuilder()
+                .setColor('#000000') // Schwarzes Embed (Schwarz/Weiß gewünscht)
+                .setTitle('🔫 Waffen Verkauf')
+                .addFields(
+                    { name: '👤 Verkäufer', value: seller, inline: true },
+                    { name: '🛒 Waffe', value: `${amount}x ${weapon}`, inline: true },
+                    { name: '💵 Preis', value: `${totalPrice.toLocaleString('de-DE')} €`, inline: true },
+                    { name: '💰 Geldart', value: moneyType === 'Grün' ? 'Grüngeld' : 'Schwarzgeld', inline: true },
+                    { name: '🏷️ Rabatt (10%)', value: discount ? '✅ Ja' : '❌ Nein', inline: true }
+                )
+                .setTimestamp();
+
+            await channel.send({ embeds: [embed] });
+            res.json({ success: true });
+        } else {
+            res.status(500).json({ success: false, error: "Channel nicht gefunden" });
+        }
+    } catch (error) {
+        console.error("Fehler beim Senden des Verkaufs-Logs:", error);
+        res.status(500).json({ success: false });
     }
 });
 
