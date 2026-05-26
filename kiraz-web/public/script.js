@@ -1443,6 +1443,7 @@ const verkaufPreise = {
 function sellWeapons() {
     let moneyType = document.getElementById("verkaufMoneyType").value;
     let discount = document.getElementById("verkaufDiscount").checked;
+    let buyer = document.getElementById("verkaufBuyer").value; // NEU: Ankäufer auslesen
     let result = document.getElementById("verkaufResult");
 
     let cart = [];
@@ -1466,7 +1467,7 @@ function sellWeapons() {
     let finalPrice = discount ? basePrice * 0.9 : basePrice;
     let cartString = cart.map(item => `${item.amount}x ${item.weapon}`).join('\n');
 
-    if(confirm(`Möchtest du folgende Waffen für insgesamt ${finalPrice.toLocaleString('de-DE')} € ${moneyType}geld verkaufen?\n\n${cartString}`)) {
+    if(confirm(`Möchtest du folgende Waffen für insgesamt ${finalPrice.toLocaleString('de-DE')} € ${moneyType}geld an ${buyer || 'Unbekannt'} verkaufen?\n\n${cartString}`)) {
         fetch('/api/sell-weapon', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1474,7 +1475,8 @@ function sellWeapons() {
                 items: cart, // Wir senden jetzt ein Array an Waffen!
                 moneyType: moneyType,
                 discount: discount,
-                totalPrice: finalPrice
+                totalPrice: finalPrice,
+                buyer: buyer // NEU: Ankäufer ans Backend senden
             })
         })
         .then(res => res.json())
@@ -1488,6 +1490,7 @@ function sellWeapons() {
                     document.getElementById(data.id).value = 0;
                 }
                 document.getElementById("verkaufDiscount").checked = false;
+                document.getElementById("verkaufBuyer").value = ""; // NEU: Feld zurücksetzen
 
             } else {
                 result.innerText = "❌ Fehler beim Loggen ins Discord.";
