@@ -181,25 +181,26 @@ app.get('/api/faction-members', async (req, res) => {
 app.post('/api/sell-weapon', async (req, res) => {
     if (!req.session.isAuthorized) return res.status(401).json({ success: false, error: "Nicht autorisiert" });
 
-    const { items, moneyType, discount, totalPrice } = req.body;
+    // NEU: 'buyer' aus dem Request-Body empfangen
+    const { items, moneyType, discount, totalPrice, buyer } = req.body; 
     const seller = req.session.username;
     
     try {
-        const channel = await client.channels.fetch('1508425026846593214'); // Log-Channel-ID
+        const channel = await client.channels.fetch('1508425026846593214'); 
         if (channel) {
             
-            // Verkaufsliste formatieren
             const itemsList = items.map(i => `> **${i.amount}x** ${i.weapon}`).join('\n');
 
             const embed = new EmbedBuilder()
-                .setColor('#000000') // Schwarzes Embed
+                .setColor('#000000') 
                 .setTitle('🔫 Waffen Verkauf')
                 .addFields(
                     { name: '👤 Verkäufer', value: seller, inline: true },
-                    { name: '💵 Gesamtpreis', value: `${totalPrice.toLocaleString('de-DE')} €`, inline: true },
+                    { name: '🤝 Ankäufer', value: buyer || 'Unbekannt', inline: true }, // NEU: Ankäufer im Log anzeigen
+                    { name: '💵 Gesamtpreis', value: `${totalPrice.toLocaleString('de-DE')} €`, inline: false },
                     { name: '💰 Geldart', value: moneyType === 'Grün' ? 'Grüngeld' : 'Schwarzgeld', inline: true },
-                    { name: '🛒 Verkaufte Waffen', value: itemsList, inline: false },
-                    { name: '🏷️ 10% Rabatt genutzt', value: discount ? '✅ Ja' : '❌ Nein', inline: false }
+                    { name: '🏷️ 10% Rabatt genutzt', value: discount ? '✅ Ja' : '❌ Nein', inline: true },
+                    { name: '🛒 Verkaufte Waffen', value: itemsList, inline: false }
                 )
                 .setTimestamp();
 
