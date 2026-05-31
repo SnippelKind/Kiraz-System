@@ -277,7 +277,7 @@ const commands = [
         description: 'Legt Items in den Spind eines Mitglieds (Admin)',
         options: [
             { name: 'mitglied', type: 6, description: 'Das Mitglied auswählen', required: true },
-            { name: 'item', type: 3, description: 'Welches Item?', required: true, choices: spindItems },
+            { name: 'item', type: 3, description: 'Welches Item?', required: true }, // <-- Limit entfernt
             { name: 'anzahl', type: 4, description: 'Wie viele?', required: true }
         ]
     },
@@ -286,7 +286,7 @@ const commands = [
         description: 'Nimmt Items aus dem Spind eines Mitglieds (Admin)',
         options: [
             { name: 'mitglied', type: 6, description: 'Das Mitglied auswählen', required: true },
-            { name: 'item', type: 3, description: 'Welches Item?', required: true, choices: spindItems },
+            { name: 'item', type: 3, description: 'Welches Item?', required: true }, // <-- Limit entfernt
             { name: 'anzahl', type: 4, description: 'Wie viele?', required: true }
         ]
     },
@@ -330,8 +330,7 @@ const commands = [
                 name: 'item',
                 type: 3, 
                 description: 'Welches Item? (Pflicht bei Ein-/Auslagern)',
-                required: false,
-                choices: spindItems
+                required: false // <-- Limit entfernt
             },
             {
                 name: 'anzahl',
@@ -397,7 +396,6 @@ const commands = [
         name: 'befehle',
         description: 'Listet alle verfügbaren Bot-Befehle übersichtlich auf'
     },
-    // HIER WURDE DER NEUE RANG COMMAND EINGEFÜGT
     {
         name: 'rang',
         description: 'Zeigt eine Liste der Ränge und den jeweiligen Usern an.'
