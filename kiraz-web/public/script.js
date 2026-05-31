@@ -1442,8 +1442,8 @@ const verkaufPreise = {
 
 function sellWeapons() {
     let moneyType = document.getElementById("verkaufMoneyType").value;
-    let discount = document.getElementById("verkaufDiscount").checked;
-    let buyer = document.getElementById("verkaufBuyer").value; // NEU: Ankäufer auslesen
+    let discount = parseFloat(document.getElementById("verkaufDiscount").value) || 0; // Rabatt als Zahl auslesen
+    let buyer = document.getElementById("verkaufBuyer").value; 
     let result = document.getElementById("verkaufResult");
 
     let cart = [];
@@ -1464,33 +1464,34 @@ function sellWeapons() {
         return;
     }
 
-    let finalPrice = discount ? basePrice * 0.9 : basePrice;
+    // Rabatt dynamisch berechnen
+    let finalPrice = basePrice * (1 - (discount / 100));
     let cartString = cart.map(item => `${item.amount}x ${item.weapon}`).join('\n');
 
-    if(confirm(`Möchtest du folgende Waffen für insgesamt ${finalPrice.toLocaleString('de-DE')} € ${moneyType}geld an ${buyer || 'Unbekannt'} verkaufen?\n\n${cartString}`)) {
+    if(confirm(`Möchtest du folgende Waffen für insgesamt ${finalPrice.toLocaleString('de-DE', {minimumFractionDigits: 0, maximumFractionDigits: 0})} € ${moneyType}geld an ${buyer || 'Unbekannt'} verkaufen?\n(Mit ${discount}% Rabatt)\n\n${cartString}`)) {
         fetch('/api/sell-weapon', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                items: cart, // Wir senden jetzt ein Array an Waffen!
+                items: cart, 
                 moneyType: moneyType,
-                discount: discount,
+                discount: discount, // Senden die Prozentzahl an den Server
                 totalPrice: finalPrice,
-                buyer: buyer // NEU: Ankäufer ans Backend senden
+                buyer: buyer 
             })
         })
         .then(res => res.json())
         .then(data => {
             if(data.success) {
-                result.innerText = `✅ Erfolgreich für ${finalPrice.toLocaleString('de-DE')} € verkauft und geloggt!`;
+                result.innerText = `✅ Erfolgreich für ${finalPrice.toLocaleString('de-DE', {minimumFractionDigits: 0, maximumFractionDigits: 0})} € verkauft und geloggt!`;
                 result.style.color = "#77dd77";
                 
                 // Formular zurücksetzen
                 for (let data of Object.values(verkaufPreise)) {
                     document.getElementById(data.id).value = 0;
                 }
-                document.getElementById("verkaufDiscount").checked = false;
-                document.getElementById("verkaufBuyer").value = ""; // NEU: Feld zurücksetzen
+                document.getElementById("verkaufDiscount").value = 0; // Wieder auf 0 setzen
+                document.getElementById("verkaufBuyer").value = ""; 
 
             } else {
                 result.innerText = "❌ Fehler beim Loggen ins Discord.";
