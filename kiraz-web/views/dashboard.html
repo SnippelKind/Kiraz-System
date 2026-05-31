@@ -291,9 +291,9 @@
             <label style="display:block; margin-bottom: 5px; color: #ccc;">Ankäufer:</label>
             <input type="text" id="verkaufBuyer" placeholder="Name des Käufers..." style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); box-sizing: border-box;">
         </div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
-            <input type="checkbox" id="verkaufDiscount" style="width: 20px; height: 20px;">
-            <label for="verkaufDiscount" style="color: white; font-weight: bold;">10% Rabatt anwenden</label>
+        <div style="margin-bottom: 20px;">
+            <label style="display:block; margin-bottom: 5px; color: #ccc;">Rabatt (%):</label>
+            <input type="number" id="verkaufDiscount" min="0" max="100" value="0" placeholder="Z.b. 15 für 15%" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); box-sizing: border-box;">
         </div>
 
         <button class="btn-action" onclick="sellWeapons()" style="background: #ffffff; color: #000000;">🛒 Verkaufen & Loggen</button>
