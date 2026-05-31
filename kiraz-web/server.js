@@ -199,7 +199,7 @@ app.post('/api/sell-weapon', async (req, res) => {
                     { name: '🤝 Ankäufer', value: buyer || 'Unbekannt', inline: true }, // NEU: Ankäufer im Log anzeigen
                     { name: '💵 Gesamtpreis', value: `${totalPrice.toLocaleString('de-DE')} €`, inline: false },
                     { name: '💰 Geldart', value: moneyType === 'Grün' ? 'Grüngeld' : 'Schwarzgeld', inline: true },
-                    { name: '🏷️ 10% Rabatt genutzt', value: discount ? '✅ Ja' : '❌ Nein', inline: true },
+                    { name: '🏷️ Rabatt genutzt', value: discount > 0 ? `✅ ${discount}%` : '❌ Nein', inline: true },
                     { name: '🛒 Verkaufte Waffen', value: itemsList, inline: false }
                 )
                 .setTimestamp();
