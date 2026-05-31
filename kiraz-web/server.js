@@ -35,7 +35,7 @@ const REQUIRED_ROLE_ID = '1365489886022467705';
 const ADMIN_ROLES = ['1393797458366042205', '1394457300693024838', '1500290272276381716'];
 const LEADER_ROLES = ['1484284804143906956', '1485002612372668557'];
 
-// Exakte Reihenfolge der Rollen-IDs für die Checkliste
+// Exakte Reihenfolge der Rollen-IDs für die Checkliste und den /rang Command
 const RANK_ORDER = [
     '1346576630767816869', '1346576630767816868', '1346576630767816867', 
     '1346576630767816866', '1346576630751035542', '1346576630751035541', 
@@ -396,6 +396,11 @@ const commands = [
     {
         name: 'befehle',
         description: 'Listet alle verfügbaren Bot-Befehle übersichtlich auf'
+    },
+    // HIER WURDE DER NEUE RANG COMMAND EINGEFÜGT
+    {
+        name: 'rang',
+        description: 'Zeigt eine Liste der Ränge und den jeweiligen Usern an.'
     }
 ];
 
@@ -421,6 +426,51 @@ client.on('interactionCreate', async interaction => {
     const isCreator = interaction.user.id === CREATOR_ID;
 
     // ==========================================
+    // RANG BEFEHL (NEU)
+    // ==========================================
+    if (cmd === 'rang') {
+        // Wir verzögern die Antwort kurz, falls der Server viele Mitglieder hat und das Fetchen dauert
+        await interaction.deferReply();
+
+        // Fetche alle Member, damit der Cache vollständig ist
+        await interaction.guild.members.fetch();
+
+        let description = '';
+
+        // Geht exakt die Reihenfolge des RANK_ORDER Arrays aus Zeile 41 durch
+        for (const roleId of RANK_ORDER) {
+            const role = interaction.guild.roles.cache.get(roleId);
+            
+            if (role) {
+                // Sammle alle User mit dieser Rolle (als Erwähnung)
+                const members = role.members.map(m => m.user.toString());
+                
+                // Falls User die Rolle haben, liste sie auf, ansonsten schreibe "Niemand"
+                const memberList = members.length > 0 ? members.join('\n') : '*Niemand*';
+
+                // Formatierung: Wir nehmen direkt den offiziellen Rollennamen von Discord (role.name)
+                description += `**${role.name}**\n${memberList}\n\n`;
+            }
+        }
+
+        // Falls aus irgendeinem Grund kein Rang gefunden wird (Fallback)
+        if (description === '') {
+            description = '*Es konnten keine konfigurierten Ränge gefunden werden.*';
+        }
+
+        // Erstelle das schwarz-weiße Embed
+        const embed = new EmbedBuilder()
+            .setTitle('Fraktions-Ränge')
+            .setDescription(description.substring(0, 4096)) // .substring verhindert Crashs, falls der Text zu lang für Discord wird
+            .setColor('#000000') // Hex-Code für Schwarz
+            .setTimestamp()
+            .setFooter({ text: 'Rangliste', iconURL: interaction.guild.iconURL() });
+
+        // Sende das Embed ab
+        await interaction.editReply({ embeds: [embed] });
+    }
+
+    // ==========================================
     // BEFEHLS-ÜBERSICHT
     // ==========================================
     if (cmd === 'befehle') {
@@ -434,7 +484,7 @@ client.on('interactionCreate', async interaction => {
                 { name: '👷 Arbeiter-System', value: '`/arbeiter` - Trägt einen neuen Arbeiter inkl. Ausweisbild ein\n`/arbeiter_entfernen` - Löscht einen Arbeiter aus der Datenbank\n`/arbeiterliste` - Zeigt alle eingetragenen Arbeiter', inline: false },
                 { name: '🏖️ Abmeldungen', value: '`/abmeldung` - Meldet ein Mitglied mit Datum und Grund ab\n`/abgemeldet` - Zeigt eine Übersicht aller aktiven Abmeldungen', inline: false },
                 { name: '⚖️ Verwaltung & Sanktionen', value: '`/sanktion` - Stellt eine offizielle Sanktion mit Zahlungsfrist aus\n`/verwaltung` - Postet die Team-Verwaltungsübersicht', inline: false },
-                { name: '🌐 Server & Allgemein', value: '`/online` - Zeigt die aktuell verbundenen Spieler auf dem FiveM Server\n`/befehle` - Zeigt dieses Menü an', inline: false }
+                { name: '🌐 Server & Allgemein', value: '`/online` - Zeigt die aktuell verbundenen Spieler auf dem FiveM Server\n`/rang` - Zeigt eine komplette Liste der Ränge und Mitglieder an\n`/befehle` - Zeigt dieses Menü an', inline: false }
             )
             .setFooter({ text: `Angefordert von ${interaction.member.displayName}` })
             .setTimestamp();
